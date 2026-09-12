@@ -1,0 +1,17 @@
+name: Build macOS app
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test work timer
+        run: swift test --disable-sandbox
+      - name: Build app
+        run: ./scripts/build-app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MoonRabbit-macOS
+          path: dist/MoonRabbit-macOS.zip

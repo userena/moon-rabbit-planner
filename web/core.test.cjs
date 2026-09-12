@@ -8,3 +8,13 @@ test('priority reminders fire once at each lead and include tomorrow across midn
 test('upcoming ranks high priority first and ignores deleted tasks',()=>{const s=M.defaults(),a=M.task(600),b=M.task(610);a.title='Low';a.priority='low';b.title='High';b.priority='high';s.days['2026-09-30:developer']={tasks:[a,b]};assert.equal(M.upcoming(s,new Date(2026,8,30,9,0))[0].task.title,'High');s.days['2026-09-30:developer'].tasks=[];assert.equal(M.reminders(s,new Date(2026,8,30,9,0)).length,0)});
 
 test('goal progress uses Monday week, month boundaries and selected role',()=>{const s=M.defaults();s.days={'2026-09-28:developer':{tasks:[{done:true,title:'A'}]},'2026-09-30:developer':{tasks:[{done:true,title:'B'},{done:true,title:''}]},'2026-10-01:developer':{tasks:[{done:true,title:'C'}]},'2026-09-30:designer':{tasks:[{done:true,title:'D'}]}};assert.equal(M.progressCount(s,'2026-09-30','day'),1);assert.equal(M.progressCount(s,'2026-09-30','week'),3);assert.equal(M.progressCount(s,'2026-09-30','month'),2)});
+
+test('confirmed completion updates each period and undo removes it without double counting',()=>{
+ const s=M.defaults(),a={id:'a',title:'Daily work',done:false};s.days={'2026-09-30:developer':{tasks:[a]}};
+ assert.deepEqual(['day','week','month'].map(p=>M.progressCount(s,'2026-09-30',p)),[0,0,0]);a.done=true;
+ assert.deepEqual(['day','week','month'].map(p=>M.progressCount(s,'2026-09-30',p)),[1,1,1]);
+ s.months={'2026-09:developer':{tasks:[{title:'Monthly review',done:true},{title:' ',done:true}]},'2026-09:designer':{tasks:[{title:'Other role',done:true}]}};
+ assert.deepEqual(['day','week','month'].map(p=>M.progressCount(s,'2026-09-30',p)),[1,1,2]);a.done=false;
+ assert.deepEqual(['day','week','month'].map(p=>M.progressCount(s,'2026-09-30',p)),[0,0,1]);
+ s.months['2026-09:developer'].tasks[0].done=false;assert.equal(M.progressCount(s,'2026-09-30','month'),0);
+});

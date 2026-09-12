@@ -6,7 +6,7 @@ struct GoalProgressView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(state.language == .ko ? "목표 달성도" : "Goal progress").font(.system(size: 20, weight: .semibold))
-            Text(state.language == .ko ? "완료한 일정 수 / 목표 · 선택한 플래너 모드 기준" : "Completed tasks / target · selected planner mode").font(.caption).foregroundStyle(.secondary)
+            Text(state.language == .ko ? "완료 체크한 일정이 일간·주간·월간에 반영돼요. 월간 할 일은 월간에만 합산됩니다." : "Checked tasks count toward daily, weekly and monthly progress. Monthly to-dos count toward the month only.").font(.caption).foregroundStyle(.secondary)
             ForEach(["day", "week", "month"], id: \.self) { period in
                 GoalProgressRow(state: state, date: date, period: period)
             }
@@ -39,6 +39,9 @@ struct GoalProgressRow: View {
             total += state.plan.modeItems(day: DailyPlan.key(for: day), role: state.activeRole).filter { $0.done && !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
             guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }; day = next
         }
+        if period == "month" {
+            total += (state.plan.monthlyRecords[MonthlyRecord.key(date: date, role: state.activeRole)]?.tasks ?? []).filter { $0.done && !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+        }
         return total
     }
     var body: some View {
@@ -46,7 +49,7 @@ struct GoalProgressRow: View {
             HStack {
                 Text(title).fontWeight(.semibold)
                 Spacer()
-                Text("\(count) / \(max(1, target))").monospacedDigit()
+                Text("\(count) / \(max(1, target)) · \(min(100, Int((Double(count) / Double(max(1, target)) * 100).rounded())))%").monospacedDigit()
                 ColorPicker(state.language == .ko ? "\(title) 막대 색" : "\(title) bar color", selection: Binding(get: { barColor.color }, set: { storedColor = (try? JSONEncoder().encode(PetColor($0))) ?? Data() }), supportsOpacity: false).labelsHidden()
             }
             ProgressView(value: Double(min(count, max(1, target))), total: Double(max(1, target)))

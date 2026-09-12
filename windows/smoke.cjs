@@ -24,6 +24,13 @@ module.exports = async ({planner, pet, file, tick, screen}) => {
   planner.reload();
   await delay(300);
   await until(planner, "document.querySelector('h1')?.textContent === 'Windows 실제 테스트' && document.querySelector('[data-field=title]')?.value === '실제 일정 저장'");
+  await planner.webContents.executeJavaScript("document.querySelector('[data-field=done]').click(); document.querySelector('[data-view=week]').click()");
+  assert.equal(await planner.webContents.executeJavaScript("[...document.querySelectorAll('progress')].every(p=>p.value===1)"), true);
+  await planner.webContents.executeJavaScript("document.querySelector('[data-week-done]').click()");
+  assert.equal(await planner.webContents.executeJavaScript("[...document.querySelectorAll('progress')].every(p=>p.value===0)"), true);
+  await planner.webContents.executeJavaScript("document.querySelector('[data-view=month]').click(); document.querySelector('#add-month').click(); const title=document.querySelector('[data-field=title]'); title.value='Monthly verification'; title.dispatchEvent(new Event('input',{bubbles:true})); document.querySelector('[data-field=done]').click()");
+  assert.deepEqual(await planner.webContents.executeJavaScript("[...document.querySelectorAll('progress')].map(p=>p.value)"), [0,0,1]);
+  await planner.webContents.executeJavaScript("document.querySelector('[data-delete]').click(); document.querySelector('[data-view=day]').click()");
   await planner.webContents.executeJavaScript("document.querySelector('[data-delete]').click()");
   await until(planner, "window.moonRabbit.loadShared().then(s => Object.values(s.days).every(d=>d.tasks.length===0))");
   await planner.webContents.executeJavaScript(`document.querySelector('[data-view="studio"]').click(); const project=document.querySelector('[data-studio-field="project"]'); project.value='Agent smoke'; project.dispatchEvent(new Event('input',{bubbles:true})); document.querySelector('[data-preview]').click();`);

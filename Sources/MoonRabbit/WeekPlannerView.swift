@@ -50,7 +50,15 @@ struct WeekPlannerView: View {
                     let rows = state.plan.modeItems(day: DailyPlan.key(for: day), role: state.activeRole).filter { !$0.title.trimmingCharacters(in: .whitespaces).isEmpty }.sorted { ($0.startMinute ?? 1440) < ($1.startMinute ?? 1440) }
                     if rows.isEmpty { Text(state.language == .ko ? "등록한 일정이 없어요." : "No scheduled tasks.").foregroundStyle(.secondary) }
                     ForEach(rows) { row in
-                        HStack { Image(systemName: row.done ? "checkmark.circle.fill" : "circle"); Text(row.time).monospacedDigit(); Text(row.title).strikethrough(row.done); Spacer(); Text(state.tr(row.priorityLabel)).font(.caption) }
+                        HStack {
+                            Toggle(state.language == .ko ? "\(row.title) 완료 확인" : "Confirm completion: \(row.title)", isOn: Binding(get: { row.done }, set: { value in
+                                let key = DailyPlan.key(for: day)
+                                var items = state.plan.modeItems(day: key, role: state.activeRole)
+                                guard let index = items.firstIndex(where: { $0.id == row.id }) else { return }
+                                items[index].done = value
+                                state.plan.setModeItems(items, day: key, role: state.activeRole)
+                            })).labelsHidden().toggleStyle(.checkbox)
+                            Text(row.time).monospacedDigit(); Text(row.title).strikethrough(row.done); Spacer(); Text(state.tr(row.priorityLabel)).font(.caption) }
                     }
                 }.padding(20).modifier(CalendarPeriodTint(date: day)).plannerSurface(state.appearance)
             }

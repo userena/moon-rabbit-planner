@@ -31,6 +31,12 @@ module.exports = async ({planner, pet, file, tick, screen}) => {
   await planner.webContents.executeJavaScript("document.querySelector('#close-dialog').click(); document.querySelector('[data-view=week]').click()");
   assert.equal(await planner.webContents.executeJavaScript("document.querySelectorAll('[data-date]').length"), 7);
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).title, 'Windows 실제 테스트');
+  await planner.webContents.executeJavaScript(`document.querySelector('[data-area=life]').click(); const exercise=document.querySelector('[data-routine=exercise]'); exercise.value='Walk 30 min'; exercise.dispatchEvent(new Event('input',{bubbles:true}));`);
+  await until(planner, "window.moonRabbit.loadShared().then(s=>Object.values(s.routine).some(r=>r.exercise==='Walk 30 min'))");
+  await planner.webContents.executeJavaScript(`document.querySelector('#calendar-periods').click(); const form=document.querySelector('#period-form'); form.elements.name.value='Exam range'; form.elements.color.value='#33aa88'; form.requestSubmit(); document.querySelector('#close-dialog').click(); document.querySelector('[data-area=work]').click(); document.querySelector('[data-view=month]').click();`);
+  assert.equal(await planner.webContents.executeJavaScript("document.querySelectorAll('.period-badge').length > 0 && document.querySelectorAll('progress').length === 3"), true);
+  assert.equal(await planner.webContents.executeJavaScript("window.moonRabbit.sendPersonalAPI('OpenAI','test-model','test',false).then(()=>false,()=>true)"), true);
+  assert.equal(await pet.webContents.executeJavaScript("window.moonRabbit.deleteAPIKey('OpenAI').then(()=>false,()=>true)"), true);
   assert.equal(pet.isAlwaysOnTop(), true);
   assert.equal(await planner.webContents.executeJavaScript('window.moonRabbit.setPetSize(280)'), 280);
   assert.ok(pet.getSize()[0] >= 280);

@@ -7,6 +7,7 @@ struct DailyPlanView: View {
     @AppStorage("plannerTimeStep") private var savedTimeStep = 10
     var timeStep: Int { PlanningTimeOptions.step(savedTimeStep) }
     @State private var date = Date()
+    @State private var showDateChooser = false
     @State private var monthView = false
     @AppStorage("plannerPeriod") private var periodValue = PlannerPeriod.month.rawValue
     @AppStorage("plannerStart") private var startTimestamp = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
@@ -158,8 +159,12 @@ struct DailyPlanView: View {
             }.font(.system(size: 17)).buttonStyle(.borderless)
             HStack(spacing: 14) {
                 Button { date = Calendar.current.date(byAdding: .day, value: -1, to: date)! } label: { Image(systemName: "chevron.left") }.accessibilityLabel(state.tr("이전 날"))
-                DatePicker("", selection: $date, displayedComponents: .date).labelsHidden()
-                    .font(.system(size: 21, weight: .semibold)).controlSize(.large).frame(width: 195)
+                Button { showDateChooser.toggle() } label: {
+                    Text(date, format: .dateTime.year().month().day()).font(.system(size: 23, weight: .semibold))
+                }.buttonStyle(.plain).accessibilityLabel(state.language == .ko ? "날짜 변경" : "Change date")
+                    .popover(isPresented: $showDateChooser) {
+                        DatePicker(state.language == .ko ? "날짜" : "Date", selection: $date, displayedComponents: .date).padding(20)
+                    }
                 Button { date = Calendar.current.date(byAdding: .day, value: 1, to: date)! } label: { Image(systemName: "chevron.right") }.accessibilityLabel(state.tr("다음 날"))
                 Button(state.tr("오늘")) { date = Date() }
                 Spacer()

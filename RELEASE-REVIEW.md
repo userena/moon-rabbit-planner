@@ -34,5 +34,5 @@ scanId를 반환하지 못했습니다. 공식 보안 스캔 완료나 취약점
 
 ## Cross-platform preview update
 Windows uses Electron (MIT; bundled Chromium notices are retained). iPad uses Apple system SwiftUI/WebKit.
-Shared JavaScript model and Windows unit tests: 9 passed. Actual Windows/iPad runtime verification is pending CI; compile success alone does not establish device compatibility.
+Shared JavaScript model and Windows unit tests: 9 passed. Windows native Electron smoke and iPad simulator portrait/landscape UI tests passed on GitHub Actions (runs 34689305155 and 34689305139). Physical Galaxy Book and physical iPad have not been tested.
 Latest additions: selectable supplied logo, zoom, schedule priority reminders, and meal roulette. No paid runtime API or remote backend was added.

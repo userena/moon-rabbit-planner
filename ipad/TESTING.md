@@ -9,3 +9,8 @@ Local verification on 2026-09-12:
 - Physical iPad: not tested.
 
 The included `PlannerUITests` checks bundled HTML loads in WKWebView and captures portrait/landscape screenshots. `.github/workflows/ipad.yml` runs it on an available iPad simulator; a successful workflow run is required before calling the simulator test passed.
+
+
+## GitHub iPad simulator execution — passed
+Run https://github.com/userena/moon-rabbit-planner/actions/runs/34689305139
+Commit 7b33b487aec4a736d9952a114c595b0cc03648ab: bundled WKWebView loaded the planner and portrait/landscape UI tests passed. Physical iPad installation is not tested. No signed installable IPA is distributed.

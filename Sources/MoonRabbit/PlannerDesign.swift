@@ -93,28 +93,39 @@ struct PlannerLogoMenu: View {
         ("check", "체크 표시", "Checkmark", "checkmark.circle")
     ]
     var selected: String { state.appearance.plannerLogo ?? "original" }
+    @State private var showing = false
     var body: some View {
-        Menu {
-            ForEach(Self.options, id: \.0) { option in
-                Button {
-                    state.appearance.plannerLogo = option.0
-                } label: {
-                    Label((state.language == .en ? option.2 : option.1) + (selected == option.0 ? " ✓" : ""), systemImage: option.3)
+        Button { showing.toggle() } label: {
+            Group {
+                if selected == "original" {
+                    Image(nsImage: PetArtwork.image("plannerLogo")).resizable().scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else if selected == "ribbon" {
+                    Text("🎀").font(.system(size: 30))
+                } else {
+                    Image(systemName: Self.options.first(where: { $0.0 == selected })?.3 ?? "cup.and.saucer")
+                        .font(.system(size: 30, weight: .regular)).foregroundStyle(state.appearance.plannerAccent.color)
                 }
-            }
-        } label: {
-            if selected == "original" {
-                Image(nsImage: PetArtwork.image("plannerLogo")).resizable().scaledToFit()
-                    .frame(width: 52, height: 52).clipShape(RoundedRectangle(cornerRadius: 12))
-            } else if selected == "ribbon" {
-                Text("🎀").font(.system(size: 30)).frame(width: 52, height: 52)
-            } else {
-                Image(systemName: Self.options.first(where: { $0.0 == selected })?.3 ?? "cup.and.saucer")
-                    .font(.system(size: 30, weight: .regular)).frame(width: 52, height: 52)
-                    .foregroundStyle(state.appearance.plannerAccent.color)
-            }
-        }.menuStyle(.borderlessButton).fixedSize()
+            }.frame(width: 52, height: 52).clipped()
+        }.buttonStyle(.plain)
             .accessibilityLabel(state.language == .en ? "Change planner logo" : "플래너 로고 변경")
             .help(state.language == .en ? "Choose a logo · saved automatically" : "로고 선택 · 자동 저장")
+            .popover(isPresented: $showing) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(state.language == .en ? "Choose your logo" : "로고를 골라주세요").font(.headline)
+                    ForEach(Self.options, id: \.0) { option in
+                        Button {
+                            state.appearance.plannerLogo = option.0
+                            showing = false
+                        } label: {
+                            HStack {
+                                Text(state.language == .en ? option.2 : option.1)
+                                Spacer()
+                                if selected == option.0 { Image(systemName: "checkmark") }
+                            }.frame(width: 180).padding(6)
+                        }.buttonStyle(.plain)
+                    }
+                }.padding(18)
+            }
     }
 }

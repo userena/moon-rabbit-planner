@@ -17,3 +17,7 @@ pnpm dist
 The GitHub Actions Windows job opens actual Electron windows, checks isolation, persistence, validated IPC, resize, movement and stop, then builds the portable EXE. A successful job is required before calling the Windows version runtime-tested. A macOS smoke run does not validate Windows rendering or Galaxy Book hardware.
 
 The portable executable is unsigned. Windows may show its standard unknown-publisher notice. No administrator installation is required. Do not disable antivirus or SmartScreen globally.
+
+
+## Verified Windows execution
+GitHub Windows runner run https://github.com/userena/moon-rabbit-planner/actions/runs/34689305155 passed real Electron UI load, artwork load, rename, schedule add/delete, reload persistence, validated IPC, autonomous pet movement and stop. Portable x64 EXE packaging passed. Physical Galaxy Book hardware is not tested.

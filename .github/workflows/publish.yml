@@ -1,0 +1,45 @@
+name: Publish verified preview downloads
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source and build updated Mac app
+        run: |
+          swift test --disable-sandbox
+          node --test web/core.test.cjs
+          bash scripts/build-app.sh
+      - name: Retrieve tested Windows build and package iPad source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/${{ github.repository }}/actions/runs/34689305155 --jq .conclusion)" = success
+          test "$(gh api repos/${{ github.repository }}/actions/runs/34689305139 --jq .conclusion)" = success
+          mkdir -p release
+          gh run download 34689305155 -n MoonRabbit-Windows-x64 -D release
+          cp dist/MoonRabbit-macOS.zip release/
+          git archive --format=zip --output=release/MoonRabbit-iPad-source.zip HEAD ipad web scripts/prepare-web-assets.py Sources/MoonRabbit/Resources ARTWORK-LICENSE.md LICENSE THIRD-PARTY-NOTICES.md PRIVACY.md
+      - name: Publish preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > /tmp/release-notes.md <<'NOTES'
+          달토끼 플래너 개인용 업데이트입니다. 기본 핑크, 로고 선택, 날짜 확대, 창/배율 조절, 우선순위 알림과 메뉴 룰렛을 포함합니다.
+
+          - Mac: MoonRabbit-macOS.zip — 최신 Mac 앱. Apple 공증을 받지 않은 ad-hoc 서명입니다.
+          - Windows / Galaxy Book: MoonRabbit-Windows-2.0.0-x64.exe — Windows 실행/저장/이동 테스트 통과. 실제 Galaxy Book 하드웨어 테스트는 하지 않았습니다.
+          - iPad: MoonRabbit-iPad-source.zip — Xcode 빌드용 소스. 시뮬레이터 세로/가로 테스트 통과. 바로 설치하는 IPA가 아니며 기기 설치에는 서명 설정이 필요합니다.
+
+          Windows/iPad 공통 코드 검증 커밋: 7b33b487aec4a736d9952a114c595b0cc03648ab. 이후 Mac 로고 표시 수정과 배포 문서만 변경했습니다.
+          말풍선 알림은 앱 실행 중에 동작하며, iPad는 앱이 화면에 열려 있어야 합니다. 실시간 팀 공동 사용 기능은 포함하지 않습니다.
+          NOTES
+          gh release create v2.0.0-preview release/* --target "$GITHUB_SHA" --title "달토끼 플래너 · Mac / Windows / iPad preview" --notes-file /tmp/release-notes.md --prerelease

@@ -78,3 +78,43 @@ extension WorkRole {
         }
     }
 }
+
+
+struct PlannerLogoMenu: View {
+    @ObservedObject var state: PetState
+    static let options = [
+        ("original", "기본 로고", "Original logo", "cup.and.saucer"),
+        ("ribbon", "리본", "Ribbon", "gift"),
+        ("heart", "하트", "Heart", "heart"),
+        ("pencil", "연필", "Pencil", "pencil"),
+        ("smile", "스마일", "Smile", "face.smiling"),
+        ("rabbit", "토끼 실루엣", "Rabbit silhouette", "hare.fill"),
+        ("star", "별", "Star", "star"),
+        ("check", "체크 표시", "Checkmark", "checkmark.circle")
+    ]
+    var selected: String { state.appearance.plannerLogo ?? "original" }
+    var body: some View {
+        Menu {
+            ForEach(Self.options, id: \.0) { option in
+                Button {
+                    state.appearance.plannerLogo = option.0
+                } label: {
+                    Label((state.language == .en ? option.2 : option.1) + (selected == option.0 ? " ✓" : ""), systemImage: option.3)
+                }
+            }
+        } label: {
+            if selected == "original" {
+                Image(nsImage: PetArtwork.image("plannerLogo")).resizable().scaledToFit()
+                    .frame(width: 52, height: 52).clipShape(RoundedRectangle(cornerRadius: 12))
+            } else if selected == "ribbon" {
+                Text("🎀").font(.system(size: 30)).frame(width: 52, height: 52)
+            } else {
+                Image(systemName: Self.options.first(where: { $0.0 == selected })?.3 ?? "cup.and.saucer")
+                    .font(.system(size: 30, weight: .regular)).frame(width: 52, height: 52)
+                    .foregroundStyle(state.appearance.plannerAccent.color)
+            }
+        }.menuStyle(.borderlessButton).fixedSize()
+            .accessibilityLabel(state.language == .en ? "Change planner logo" : "플래너 로고 변경")
+            .help(state.language == .en ? "Choose a logo · saved automatically" : "로고 선택 · 자동 저장")
+    }
+}

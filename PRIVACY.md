@@ -1,7 +1,7 @@
 # Privacy / 개인정보
 
 일정, 월간 목표·메모, 담당자, 알람, 타이머, 플래너 이름·색상과 선택한 날씨 지역은
-이 Mac의 앱 설정(UserDefaults)에 저장됩니다. 서버 동기화·분석 SDK·광고 SDK·계정 가입이 없습니다.
+Mac은 UserDefaults, Windows는 앱 전용 로컬 JSON 파일, iPad는 앱 내부 WebKit 로컬 저장소에 저장됩니다. 메뉴 룰렛 후보·로고·배율·알림 중복 방지 기록도 이 기기에만 저장합니다. 서버 동기화·분석 SDK·광고 SDK·계정 가입이 없습니다.
 이 저장소와 배포 ZIP에는 사용자가 작성한 일정 및 환경설정 파일을 포함하지 않습니다.
 로컬 설정은 암호화된 비밀 저장소가 아니므로 민감한 비밀번호를 적지 마세요.
 
@@ -12,7 +12,7 @@
 제공자 정책은 THIRD-PARTY-NOTICES.md를 참고하세요.
 
 Plans, goals, notes, owners, alarms, clocks, appearance and chosen weather place
-are stored in local UserDefaults. No account, analytics, advertising or cloud
+are stored locally: UserDefaults on Mac, an app-specific JSON file on Windows, and WebKit local storage on iPad. Meal candidates, logo and zoom preferences also remain on the device. No account, analytics, advertising or cloud
 sync is included. Weather lookup sends chosen coordinates to Open-Meteo; place
 search sends the query to Photon, with an Open-Meteo fallback. Providers see
 request IP addresses. Your planner content is not sent. System GPS permission

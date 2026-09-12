@@ -8,3 +8,8 @@ dist/
 *.p12
 *.mobileprovision
 *.log
+web/assets/
+windows/node_modules/
+windows/dist/
+ipad/build/
+ipad/test-results/

@@ -1,0 +1,25 @@
+{
+  "name": "moon-rabbit-planner-windows",
+  "productName": "Moon Rabbit Planner",
+  "version": "2.0.0",
+  "description": "A local-first planner and hanbok rabbit desktop companion",
+  "author": "userena",
+  "license": "MIT",
+  "main": "main.cjs",
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test shell.test.cjs",
+    "smoke": "electron . --smoke-test",
+    "dist": "electron-builder --win portable --x64 --publish never"
+  },
+  "devDependencies": {"electron": "44.3.0", "electron-builder": "26.15.3"},
+  "build": {
+    "appId": "local.moonrabbit.windows",
+    "asar": true,
+    "files": ["*.cjs", "package.json", "!*.test.cjs"],
+    "extraResources": [{"from": "../web", "to": "web", "filter": ["**/*", "!node_modules/**", "!test*", "!package*.json"]}],
+    "directories": {"output": "dist"},
+    "win": {"target": [{"target": "portable", "arch": ["x64"]}], "signAndEditExecutable": false, "artifactName": "MoonRabbit-Windows-${version}-${arch}.${ext}"}
+  }
+}

@@ -30,3 +30,9 @@
 Codex Security 공식 검사는 시작 명령(workbench_db.py start-prompt-only-scan) 오류로
 scanId를 반환하지 못했습니다. 공식 보안 스캔 완료나 취약점 없음으로 해석하면 안 됩니다.
 이 문서는 배포 조건 정리이며 Codex Security 보안 보고서가 아닙니다.
+
+
+## Cross-platform preview update
+Windows uses Electron (MIT; bundled Chromium notices are retained). iPad uses Apple system SwiftUI/WebKit.
+Shared JavaScript model and Windows unit tests: 9 passed. Actual Windows/iPad runtime verification is pending CI; compile success alone does not establish device compatibility.
+Latest additions: selectable supplied logo, zoom, schedule priority reminders, and meal roulette. No paid runtime API or remote backend was added.

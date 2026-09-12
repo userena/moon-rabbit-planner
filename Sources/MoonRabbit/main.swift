@@ -542,7 +542,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if plannerPanel == nil {
             plannerPanel = companionPanel(title: state.tr("하루 플래너"), content: NSHostingView(rootView: DailyPlanView(state: state, save: { [weak self] in self?.savePlanner() }, settings: { [weak self] in self?.showControls() }, toggle: { [weak self] in self?.toggle() }, focus: { [weak self] minutes in self?.startFocus(minutes: minutes) })), autosave: "MoonRabbitPlannerV2")
             plannerPanel?.styleMask.insert(.resizable)
-            plannerPanel?.contentMinSize = NSSize(width: 880, height: 620)
+            plannerPanel?.contentMinSize = NSSize(width: 600, height: 440)
             if let bounds = NSScreen.main?.visibleFrame {
                 plannerPanel?.setContentSize(NSSize(width: min(980, bounds.width - 40), height: min(780, bounds.height - 80)))
                 plannerPanel?.center()
@@ -658,6 +658,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state.visible.toggle()
         if state.visible { panel.orderFrontRegardless() } else { panel.orderOut(nil) }
     }
+    var scheduleReminderKeys = UserDefaults.standard.stringArray(forKey: "scheduleReminderKeys") ?? []
+    var nextScheduleSummary = Date().addingTimeInterval(90)
+    func checkScheduleReminders() {
+        let now = Date(), calendar = Calendar.current
+        var upcoming: [(PlanItem, Date, String)] = []
+        for offset in 0...1 {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: now) else { continue }
+            let key = DailyPlan.key(for: day)
+            for item in state.plan.modeItems(day: key, role: state.activeRole) where !item.done && !item.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                guard let minute = item.startMinute, let start = calendar.date(bySettingHour: minute / 60, minute: minute % 60, second: 0, of: day), start > now else { continue }
+                upcoming.append((item, start, key))
+            }
+        }
+        upcoming.sort { $0.0.priorityRank == $1.0.priorityRank ? $0.1 < $1.1 : $0.0.priorityRank < $1.0.priorityRank }
+        var messages: [String] = []
+        for (item, start, day) in upcoming {
+            for lead in [60, 30, 10] {
+                let due = start.addingTimeInterval(Double(-lead * 60))
+                let key = "\(day):\(state.roleValue):\(item.id):\(item.time):\(lead)"
+                if now >= due && now.timeIntervalSince(due) < 60 && !scheduleReminderKeys.contains(key) {
+                    scheduleReminderKeys.append(key)
+                    let label = state.tr(item.priorityLabel)
+                    messages.append(state.language == .ko ? "[우선순위 \(label)] \(item.title) · \(lead)분 후 시작" : "[\(label) priority] \(item.title) · starts in \(lead) min")
+                }
+            }
+        }
+        if !messages.isEmpty {
+            scheduleReminderKeys = Array(scheduleReminderKeys.suffix(512))
+            UserDefaults.standard.set(scheduleReminderKeys, forKey: "scheduleReminderKeys")
+            if !state.visible { toggleVisibility() }
+            state.say("⏰ " + messages.joined(separator: "\n"), duration: 25)
+            importantMessageUntil = now.addingTimeInterval(25)
+            nextScheduleSummary = now.addingTimeInterval(180)
+            NSSound(named: NSSound.Name("Glass"))?.play()
+        } else if now > nextScheduleSummary, state.message.isEmpty, now > importantMessageUntil {
+            nextScheduleSummary = now.addingTimeInterval(180)
+            if let (item, _, _) = upcoming.first(where: { $0.1.timeIntervalSince(now) <= 3600 }) {
+                state.say(state.language == .ko ? "[우선순위 \(state.tr(item.priorityLabel))] \(item.time) · \(item.title)\n차근차근 준비해 봐요." : "[\(state.tr(item.priorityLabel)) priority] \(item.time) · \(item.title)\nLet’s get ready.", duration: 15)
+            }
+        }
+    }
     func step() {
         let now = ProcessInfo.processInfo.systemUptime
         let dt = min(max(now - lastFrame, 0), 0.1); lastFrame = now
@@ -683,6 +724,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         frameCount += 1
         if frameCount % 30 == 0 {
             refresh()
+            checkScheduleReminders()
             var alarms = state.alarms
             var due: [String] = []
             for index in alarms.indices {

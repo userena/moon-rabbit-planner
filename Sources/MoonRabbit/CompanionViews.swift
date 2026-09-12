@@ -34,8 +34,12 @@ struct DailyPlanView: View {
         let seconds = Int(state.plan.workSeconds[dayKey, default: 0])
         return String(format: "%02d:%02d", seconds / 3600, seconds / 60 % 60)
     }
+    @AppStorage("plannerZoom") private var plannerZoom = 1.0
+    @State private var measuredHeight: CGFloat = 1000
+    var zoom: CGFloat { min(1.4, max(0.75, plannerZoom)) }
     var body: some View {
-        ScrollView {
+        GeometryReader { geometry in
+        ScrollView([.horizontal, .vertical]) {
             VStack(alignment: .leading, spacing: 20) {
                 header
                 modeSelector
@@ -60,7 +64,12 @@ struct DailyPlanView: View {
                         .buttonStyle(.borderedProminent).controlSize(.large)
                 }
             }.padding(24)
-        }.frame(minWidth: 880, idealWidth: 980, minHeight: 620, idealHeight: 780)
+                .frame(width: max(880, geometry.size.width / zoom))
+                .background(GeometryReader { inner in Color.clear.preference(key: PlannerHeightKey.self, value: inner.size.height) })
+                .scaleEffect(zoom, anchor: .topLeading)
+                .frame(width: max(880, geometry.size.width / zoom) * zoom, height: measuredHeight * zoom, alignment: .topLeading)
+        }.onPreferenceChange(PlannerHeightKey.self) { measuredHeight = $0 }
+        }.frame(minWidth: 600, idealWidth: 980, minHeight: 440, idealHeight: 780)
             .font(.system(size: 14))
             .background(state.appearance.plannerBackground.color)
             .foregroundStyle(state.appearance.plannerBackground.ink).tint(plannerSage)
@@ -116,11 +125,11 @@ struct DailyPlanView: View {
             }
         }.padding(20).plannerSurface(state.appearance)
     }
+    @State private var showMealRoulette = false
     var header: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "moonphase.waning.crescent")
-                    .font(.system(size: 30, weight: .light)).foregroundStyle(plannerSage)
+                PlannerLogoMenu(state: state)
                 Text(state.appearance.resolvedPlannerTitle(language: state.language))
                     .font(.system(size: 30, weight: .semibold)).lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -129,9 +138,18 @@ struct DailyPlanView: View {
                     .help(state.tr("플래너 이름 변경"))
                     .popover(isPresented: $showRename) { PlannerNameEditor(state: state) }
                 Spacer(minLength: 8)
+                Menu {
+                    ForEach([75, 90, 100, 110, 125, 140], id: \.self) { value in
+                        Button("\(value)%") { plannerZoom = Double(value) / 100 }
+                    }
+                } label: { Text("\(Int(zoom * 100))%") }
+                    .accessibilityLabel(state.language == .ko ? "플래너 확대 축소" : "Planner zoom")
                 Button { showAppearance.toggle() } label: { Image(systemName: "paintpalette") }
                     .help(state.tr("문구와 색상 꾸미기")).accessibilityLabel(state.tr("문구와 색상 꾸미기"))
                     .popover(isPresented: $showAppearance) { AppearanceView(state: state, save: save) }
+                Button { showMealRoulette.toggle() } label: { Image(systemName: "fork.knife") }
+                    .accessibilityLabel(state.language == .ko ? "메뉴 룰렛" : "Meal roulette")
+                    .popover(isPresented: $showMealRoulette) { MealRouletteView(state: state) }
                 Button { showAlarms.toggle() } label: { Image(systemName: "alarm") }
                     .accessibilityLabel(state.tr("알람"))
                     .popover(isPresented: $showAlarms) { AlarmSettingsView(state: state) }
@@ -140,11 +158,12 @@ struct DailyPlanView: View {
             }.font(.system(size: 17)).buttonStyle(.borderless)
             HStack(spacing: 14) {
                 Button { date = Calendar.current.date(byAdding: .day, value: -1, to: date)! } label: { Image(systemName: "chevron.left") }.accessibilityLabel(state.tr("이전 날"))
-                DatePicker("", selection: $date, displayedComponents: .date).labelsHidden().frame(width: 135)
+                DatePicker("", selection: $date, displayedComponents: .date).labelsHidden()
+                    .font(.system(size: 21, weight: .semibold)).controlSize(.large).frame(width: 195)
                 Button { date = Calendar.current.date(byAdding: .day, value: 1, to: date)! } label: { Image(systemName: "chevron.right") }.accessibilityLabel(state.tr("다음 날"))
                 Button(state.tr("오늘")) { date = Date() }
                 Spacer()
-                Text(date, format: .dateTime.weekday(.wide)).font(.system(size: 14, weight: .medium)).foregroundStyle(.secondary)
+                Text(date, format: .dateTime.weekday(.wide)).font(.system(size: 20, weight: .medium)).foregroundStyle(.secondary)
             }.buttonStyle(.borderless)
             Divider().overlay(plannerSage.opacity(0.25))
         }
@@ -260,6 +279,10 @@ struct DailyPlanView: View {
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
             .background(state.appearance.plannerCard.color, in: RoundedRectangle(cornerRadius: 16)).foregroundStyle(plannerInk)
     }
+    func scheduleHint(minute: Int) -> String {
+        let matches = rows.filter { $0.overlapsBlock(start: minute, length: timeStep) }
+        return ([PlanningTimeOptions.clock(minute)] + matches.map { "\($0.title) · \(state.tr("우선순위")): \(state.tr($0.priorityLabel))" }).joined(separator: "\n")
+    }
     func scheduleColor(minute: Int) -> Color {
         guard let row = rows.first(where: { $0.overlapsBlock(start: minute, length: timeStep) }) else { return plannerInk.opacity(0.055) }
         return (row.color ?? state.appearance.plannerAccent).color
@@ -289,7 +312,7 @@ struct DailyPlanView: View {
                                 RoundedRectangle(cornerRadius: 2)
                                     .fill(scheduleColor(minute: minute))
                                     .frame(height: 15)
-                            }.buttonStyle(.plain).help(PlanningTimeOptions.clock(minute))
+                            }.buttonStyle(.plain).help(scheduleHint(minute: minute))
                                 .accessibilityLabel("\(PlanningTimeOptions.clock(minute)) · \(state.tr("+ 일정 추가"))")
                                 .contextMenu {
                                     ForEach(rows.filter { $0.overlapsBlock(start: minute, length: timeStep) }) { row in
@@ -350,4 +373,9 @@ struct WeatherView: View {
         }.padding(16).frame(width: 350, height: 410).tint(.brown)
             .background(Color(red: 0.97, green: 0.94, blue: 0.90))
     }
+}
+
+private struct PlannerHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 1000
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }

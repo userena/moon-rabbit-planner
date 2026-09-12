@@ -26,6 +26,8 @@ struct PlanItem: Codable, Identifiable {
         owner = try c.decodeIfPresent(String.self, forKey: .owner) ?? ""
         priority = try c.decodeIfPresent(String.self, forKey: .priority) ?? "normal"
     }
+    var priorityRank: Int { priority == "high" ? 0 : priority == "low" ? 2 : 1 }
+    var priorityLabel: String { priority == "high" ? "높음" : priority == "low" ? "낮음" : "보통" }
     var startMinute: Int? {
         let parts = time.trimmingCharacters(in: .whitespaces).split(separator: ":")
         guard parts.count == 2, let h = Int(parts[0]), let m = Int(parts[1]), (0..<24).contains(h), (0..<60).contains(m) else { return nil }

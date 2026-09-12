@@ -1,0 +1,36 @@
+name: iPad simulator verification
+on:
+  workflow_dispatch:
+  push:
+    paths: ['ipad/**', 'web/**', 'scripts/prepare-web-assets.py', 'Sources/MoonRabbit/Resources/**', '.github/workflows/ipad.yml']
+permissions:
+  contents: read
+jobs:
+  simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare bundled artwork
+        run: python3 scripts/prepare-web-assets.py
+      - name: Select available iPad simulator
+        run: |
+          xcrun simctl list devices available -j > /tmp/devices.json
+          python3 - <<'PY'
+          import json, os
+          devices=json.load(open('/tmp/devices.json'))['devices']
+          ipad=next(d for group in devices.values() for d in group if 'iPad' in d['name'] and d['isAvailable'])
+          with open(os.environ['GITHUB_ENV'],'a') as f: f.write('IPAD_ID='+ipad['udid']+'\n')
+          PY
+      - name: Build and run iPad UI smoke tests
+        run: >-
+          xcodebuild test -project ipad/MoonRabbitPlanner.xcodeproj -scheme MoonRabbitPlanner
+          -destination "platform=iOS Simulator,id=$IPAD_ID"
+          -derivedDataPath build/ipad -resultBundlePath build/iPad-tests.xcresult
+          CODE_SIGNING_ALLOWED=NO
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iPad-simulator-results
+          path: |
+            build/iPad-tests.xcresult
+            build/ipad/Build/Products/Debug-iphonesimulator/MoonRabbitPlanner.app

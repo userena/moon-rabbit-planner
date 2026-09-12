@@ -21,11 +21,12 @@ struct PetColor: Codable, Equatable {
 }
 struct PetAppearance: Codable, Equatable {
     var plannerTitle = ""
+    var plannerLogo: String? = nil
     var milestoneHeading = ""
     var ddayPrefix = "D"
     var plannerBackground = PetColor(0.96, 0.95, 0.97)
     var plannerCard = PetColor(1, 1, 1)
-    var plannerAccent = PetColor(0.39, 0.31, 0.43)
+    var plannerAccent = PetColor(0.9332719445228577, 0.4071231484413147, 0.7533228397369385)
     var bubbleBackground = PetColor(1, 0.96, 0.88)
     var bubbleBorder = PetColor(0.78, 0.62, 0.48)
     func resolvedPlannerTitle(language: AppLanguage) -> String {
@@ -56,6 +57,7 @@ struct AppearanceView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(state.tr("문구와 색상 꾸미기")).font(.headline)
+            PlannerLogoMenu(state: state)
             Text(state.tr("플래너 제목")).font(.caption)
             TextField(state.tr("달토끼 플래너"), text: $state.appearance.plannerTitle)
             Text(state.tr("디데이 영역 제목")).font(.caption)

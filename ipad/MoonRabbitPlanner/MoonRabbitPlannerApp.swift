@@ -18,8 +18,9 @@ struct PlannerWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
+        configuration.userContentController.add(context.coordinator, name: "personalAPI")
         configuration.userContentController.addUserScript(WKUserScript(
-            source: "window.moonRabbit = { platform: 'ipad' };",
+            source: "window.moonRabbit = { platform: 'ipad', openPersonalAPI: (prompt,english) => window.webkit.messageHandlers.personalAPI.postMessage({prompt,english}) };",
             injectionTime: .atDocumentStart, forMainFrameOnly: true
         ))
         let view = WKWebView(frame: .zero, configuration: configuration)
@@ -38,8 +39,16 @@ struct PlannerWebView: UIViewRepresentable {
 
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var resourceDirectory: URL?
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard message.frameInfo.isMainFrame, let url = message.frameInfo.request.url, let directory = resourceDirectory,
+                  url.isFileURL, url.standardizedFileURL.path == directory.appendingPathComponent("index.html").path,
+                  let body = message.body as? [String: Any], let prompt = body["prompt"] as? String, prompt.count <= 20000,
+                  let root = message.webView?.window?.rootViewController, root.presentedViewController == nil else { return }
+            let view = PersonalAPIView(english: body["english"] as? Bool ?? false, initialPrompt: prompt)
+            root.present(UIHostingController(rootView: view), animated: true)
+        }
 
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
                      decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -50,7 +59,7 @@ struct PlannerWebView: UIViewRepresentable {
                 return
             }
             // Attribution links open in the system browser, never inside the local planner.
-            let allowedHosts: Set<String> = ["open-meteo.com", "www.open-meteo.com", "openstreetmap.org", "www.openstreetmap.org", "geonames.org", "www.geonames.org", "photon.komoot.io", "github.com"]
+            let allowedHosts: Set<String> = ["gemini.google.com", "claude.ai", "chatgpt.com", "open-meteo.com", "www.open-meteo.com", "openstreetmap.org", "www.openstreetmap.org", "geonames.org", "www.geonames.org", "photon.komoot.io", "github.com"]
             if action.navigationType == .linkActivated, url.scheme == "https",
                let host = url.host?.lowercased(), allowedHosts.contains(host) {
                 UIApplication.shared.open(url)

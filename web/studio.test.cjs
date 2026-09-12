@@ -1,0 +1,8 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const S=require('./studio.js');
+test('old planner gets editable roles, empty deleted list stays empty',()=>{assert.equal(S.normalize(null).agents.length,7);assert.deepEqual(S.normalize({agents:[]}).agents,[])});
+test('normalization keeps independent IDs and restricts service and status',()=>{const d=S.normalize({agents:[{id:'a',name:'x',service:'javascript:alert(1)'},{id:'a',status:'unknown'}]});assert.notEqual(d.agents[0].id,d.agents[1].id);assert.equal(d.agents[0].service,'ChatGPT');assert.equal(d.agents[1].status,'todo')});
+test('prompt includes project context, workflow and only selected assignment in both languages',()=>{const d=S.normalize({project:'달토끼',context:'요구사항',blueprint:'설계 메모',agents:[{name:'기획',task:'인터뷰',output:'보고서'},{name:'개발',task:'구현'}]});for(const en of [false,true]){const p=S.prompt(d,d.agents[0],en);for(const x of ['달토끼','요구사항','설계 메모','기획 → 개발','인터뷰','보고서'])assert.ok(p.includes(x));assert.ok(!p.includes('구현'))}assert.deepEqual(S.normalize(JSON.parse(JSON.stringify(d))),d)});
+
+test('subcategory edits survive persistence and appear in prompt',()=>{const d=S.normalize(null);d.agents[0].categories.push({id:'cat',title:'하위 업무',note:'작업 메모',done:true});const saved=S.normalize(JSON.parse(JSON.stringify(d)));assert.ok(S.prompt(saved,saved.agents[0],false).includes('• [✓] 하위 업무\n작업 메모'));saved.agents[0].categories=[];assert.equal(S.normalize(saved).agents[0].categories.length,0)});
+
+test('all four services persist and rendered URLs stay on official services',()=>{for(const service of ['ChatGPT','Codex','Gemini','Claude']){const d=S.normalize({agents:[{name:'Agent',service}]});assert.equal(d.agents[0].service,service)}});

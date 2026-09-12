@@ -17,3 +17,7 @@ sync is included. Weather lookup sends chosen coordinates to Open-Meteo; place
 search sends the query to Photon, with an Open-Meteo fallback. Providers see
 request IP addresses. Your planner content is not sent. System GPS permission
 is not requested. Local preferences are not encrypted secret storage.
+
+## Optional personal API connection
+
+No publisher API key or shared account is included. Mac/iPad use device-only Keychain items; Windows uses Electron safeStorage encryption under the Windows account. Keys are excluded from planner records and never returned through the renderer API. The user selects OpenAI, Gemini, or Claude, saves their own key, enters a supported model ID, reviews a prompt, and explicitly confirms each billable request. Requests go only to fixed official HTTPS endpoints, without redirects or retries. No tool execution or automatic agent loops are implemented. Responses are displayed as text and not automatically persisted. Provider retention and billing terms apply. The normal planner and copy/open workflow work without this optional feature.

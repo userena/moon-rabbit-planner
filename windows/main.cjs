@@ -1,5 +1,5 @@
 'use strict';
-const {app, BrowserWindow, ipcMain, screen, Menu, shell, session} = require('electron');
+const {app, BrowserWindow, ipcMain, screen, Menu, shell, session, safeStorage} = require('electron');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const fs = require('node:fs');
@@ -14,7 +14,7 @@ const web = app.isPackaged ? path.join(process.resourcesPath, 'web') : path.join
 const allowedURLs = new Set(['index.html', 'pet.html'].map(file => pathToFileURL(path.join(web, file)).href));
 const file = () => path.join(app.getPath('userData'), 'planner.json');
 let planner, pet, wander = false, target = null, pauseUntil = 0;
-const externalHosts = new Set(['open-meteo.com', 'www.openstreetmap.org', 'photon.komoot.io']);
+const externalHosts = new Set(['platform.openai.com', 'aistudio.google.com', 'platform.claude.com', 'gemini.google.com', 'claude.ai', 'chatgpt.com', 'open-meteo.com', 'www.openstreetmap.org', 'photon.komoot.io']);
 function external(url) { try { const u = new URL(url); if (u.protocol === 'https:' && externalHosts.has(u.hostname)) void shell.openExternal(url); } catch {} }
 function trusted(event) { return [planner, pet].some(w => w && !w.isDestroyed() && w.webContents === event.sender) && event.senderFrame === event.sender.mainFrame && allowedURLs.has(event.senderFrame.url); }
 function handle(channel, fn, plannerOnly = false) { ipcMain.handle(channel, (event, ...args) => { if (!trusted(event) || (plannerOnly && event.sender !== planner?.webContents)) throw new Error('Untrusted sender'); return fn(...args); }); }
@@ -65,7 +65,11 @@ app.whenReady().then(async () => {
   openPlanner();
   try { const saved = readData(file()); wander = saved.wander === true; setSize(Number.isFinite(saved.size) ? saved.size : 180); }
   catch (error) { console.error('Could not restore planner preferences:', error.message); }
-  handle('planner:open', () => { openPlanner(); return true; });
+  const personalAPI = require('./personal-api.cjs').createStore(path.join(app.getPath('userData'), 'personal-api-keys.json'), safeStorage);
+  handle('api:save', (provider,key) => personalAPI.save(provider,key), true);
+  handle('api:delete', provider => personalAPI.remove(provider), true);
+  handle('api:send', (provider,model,prompt,consent) => personalAPI.send(provider,model,prompt,consent), true);
+  handle('planner:open', section => { if(section!==undefined&&!['planner','alarms','roulette'].includes(section))throw new Error('Invalid section');openPlanner();if(section&&section!=='planner'){const send=()=>planner.webContents.send('planner:section',section);if(planner.webContents.isLoading())planner.webContents.once('did-finish-load',send);else send()}return true; });
   handle('pet:size', setSize);
   handle('pet:wander', value => { if (typeof value !== 'boolean') throw new Error('Invalid wander value'); const saved = readData(file()); saved.wander = value; writeData(file(), saved); wander = value; target = null; broadcast('shared:update', saved); if (!value) broadcast('pet:action', {type: 'movement', direction: 'right', moving: false}); return value; });
   handle('pet:action', value => {

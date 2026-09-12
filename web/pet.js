@@ -17,6 +17,6 @@ if(document.body?.classList.contains('desktop-pet')){
  global.moonRabbit?.loadShared?.().then(data=>{if(data)update(data)}).catch(()=>{});
  global.moonRabbit?.onSharedUpdate?.(update);
  global.moonRabbit?.onPetAction?.(event=>{if(typeof event==='string')pet.perform(event);else if(event?.type==='movement'){pet.left=event.direction==='left';pet.moving=event.moving;if(event.moving)pet.perform('walk',700);else pet.perform('idle',700)}else if(event?.type==='message')pet.say(event.text,event.duration,event.weather)});
- document.querySelectorAll('[data-action]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.action;if(action==='planner')global.moonRabbit?.openPlanner?.();else if(action==='wander'){state.wander=!state.wander;global.moonRabbit?.setWander?.(state.wander);}else pet.perform(action);menu.hidden=true;}));
+ document.querySelectorAll('[data-action]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.action;if(['planner','alarms','roulette'].includes(action))global.moonRabbit?.openPlanner?.(action);else if(action==='wander'){state.wander=!state.wander;global.moonRabbit?.setWander?.(state.wander);}else pet.perform(action);menu.hidden=true;}));
 }
 })(window);

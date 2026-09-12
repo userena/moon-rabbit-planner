@@ -9,6 +9,9 @@ struct DailyPlanView: View {
     @State private var date = Date()
     @State private var showDateChooser = false
     @State private var monthView = false
+    @State private var studioView = false
+    @State private var weekView = false
+    @State private var routineView = false
     @AppStorage("plannerPeriod") private var periodValue = PlannerPeriod.month.rawValue
     @AppStorage("plannerStart") private var startTimestamp = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
     var periodStart: Date { Date(timeIntervalSince1970: startTimestamp) }
@@ -16,6 +19,7 @@ struct DailyPlanView: View {
     @State private var showAppearance = false
     @State private var showRename = false
     @State private var showAlarms = false
+    @State private var showPeriods = false
     var plannerInk: Color { state.appearance.plannerCard.ink }
     var plannerSage: Color { state.appearance.plannerAccent.color }
     let save: () -> Void
@@ -45,30 +49,41 @@ struct DailyPlanView: View {
         ScrollView([.horizontal, .vertical]) {
             VStack(alignment: .leading, spacing: 20) {
                 header
-                modeSelector
-                periodControls
-                if monthView {
+                HStack(spacing: 12) {
+                    pageButton("일관리", "Work", symbol: "briefcase", selected: !routineView) { routineView = false }
+                    pageButton("생활관리", "Life", symbol: "leaf", selected: routineView) { routineView = true }
+                }
+                if !routineView { periodControls; modeSelector }
+                if routineView {
+                    RoutineView(state: state, date: date, roulette: { showMealRoulette = true })
+                } else if studioView {
+                    AgentStudioView(state: state, date: date)
+                } else if weekView {
+                    WeekPlannerView(state: state, date: $date, openDay: { weekView = false })
+                } else if monthView {
                     GoalProgressView(state: state, date: date)
                     MonthPlannerView(state: state, role: role, date: $date, start: periodStart, end: periodEnd, openDay: { monthView = false }, save: save)
                 } else {
                     columns {
                         VStack(alignment: .leading, spacing: 16) {
                             GoalProgressView(state: state, date: date)
-                            intention
-                            MonthlyGoalCard(state: state, date: date, role: role)
                             taskList
                             RoleToolsView(state: state, dayKey: dayKey, focus: focus, role: role)
                             notes
                         }.frame(maxWidth: .infinity)
-                        VStack(spacing: 14) { rhythm; milestone }
+                        VStack(spacing: 14) { milestone; rhythm }
                             .frame(width: narrow ? availableWidth - 48 : min(270 * zoom, max(220, availableWidth * 0.28)))
                     }
                 }
                 HStack {
                     Text(state.tr("작은 계획들이 모여 나의 하루가 돼요.")).font(.system(size: 13 * zoom)).foregroundStyle(.secondary)
                     Spacer()
-                    Button(state.tr(state.saved ? "저장됨 ✓" : (monthView ? "월간 저장" : "하루 저장")), action: save)
-                        .buttonStyle(.borderedProminent).controlSize(.large)
+                    Button(action: save) {
+                        Label(state.tr(state.saved ? "저장됨 ✓" : (routineView ? (state.language == .ko ? "생활 기록 저장" : "Save routine") : studioView ? (state.language == .ko ? "작업실 저장" : "Save studio") : (weekView ? (state.language == .ko ? "주간 저장" : "Save week") : (monthView ? "월간 저장" : "하루 저장")))), systemImage: state.saved ? "checkmark.circle.fill" : "square.and.arrow.down")
+                            .font(.system(size: 19 * zoom, weight: .semibold))
+                            .frame(minWidth: 160, minHeight: 42)
+                            .padding(.horizontal, 10)
+                    }.buttonStyle(.borderedProminent).controlSize(.large).padding(.trailing, 28)
                 }
             }.padding(24)
                 .frame(width: availableWidth)
@@ -86,10 +101,13 @@ struct DailyPlanView: View {
     }
     var periodControls: some View {
         VStack(spacing: 8) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 10)], spacing: 10) {
+                pageButton("일간", "Daily", symbol: "sun.max", selected: !monthView && !weekView && !studioView && !routineView) { monthView = false; weekView = false; studioView = false; routineView = false }
+                pageButton("주간", "Weekly", symbol: "calendar", selected: weekView && !studioView && !routineView) { monthView = false; weekView = true; studioView = false; routineView = false }
+                pageButton("월간", "Monthly", symbol: "calendar.circle", selected: monthView && !studioView && !routineView) { monthView = true; weekView = false; studioView = false; routineView = false }
+                pageButton("에이전트", "Agents", symbol: "point.3.connected.trianglepath.dotted", selected: studioView && !routineView) { studioView = true; routineView = false }
+            }
             HStack {
-                Button { monthView = false } label: { Label(state.tr("일간"), systemImage: "chevron.left") }.disabled(!monthView)
-                Text(state.tr(monthView ? "월간 플래너" : "일간 플래너")).font(.headline)
-                Button { monthView = true; date = min(max(date, periodStart), periodEnd) } label: { Label(state.tr("월간"), systemImage: "chevron.right") }.disabled(monthView)
                 Spacer()
                 Picker(state.tr("계획 기간"), selection: $periodValue) {
                     ForEach(PlannerPeriod.allCases, id: \.rawValue) { Text(state.tr($0.title)).tag($0.rawValue) }
@@ -134,16 +152,23 @@ struct DailyPlanView: View {
     @State private var showMealRoulette = false
     var header: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .center, spacing: 12) {
-                PlannerLogoMenu(state: state)
-                Text(state.appearance.resolvedPlannerTitle(language: state.language))
-                    .font(.system(size: 30 * zoom, weight: .semibold)).lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button { showRename = true } label: { Image(systemName: "pencil") }
-                    .accessibilityLabel(state.tr("플래너 이름 변경"))
-                    .help(state.tr("플래너 이름 변경"))
-                    .popover(isPresented: $showRename) { PlannerNameEditor(state: state) }
-                Spacer(minLength: 8)
+            HStack(alignment: .top, spacing: 14) {
+                HStack(alignment: .center, spacing: 8) {
+                    PlannerLogoMenu(state: state)
+                    Text(state.appearance.resolvedPlannerTitle(language: state.language))
+                        .font(.system(size: 25 * zoom, weight: .semibold)).lineLimit(3)
+                    Button { showRename = true } label: { Image(systemName: "pencil") }
+                        .accessibilityLabel(state.tr("플래너 이름 변경"))
+                        .popover(isPresented: $showRename) { PlannerNameEditor(state: state) }
+                }.frame(width: 205, alignment: .leading)
+                topGoal(state.tr("오늘의 목표"), goal: $state.goal)
+                topGoal(state.tr("이달의 목표"), goal: Binding(get: { state.plan.monthlyRecords[MonthlyRecord.key(date: date, role: role)]?.goal ?? "" }, set: { state.plan.monthlyRecords[MonthlyRecord.key(date: date, role: role), default: MonthlyRecord()].goal = $0 }))
+            }
+            HStack(spacing: 12) {
+                Button(state.language == .ko ? "행사·시험 기간" : "Events & exams") { showPeriods = true }
+                    .popover(isPresented: $showPeriods) { CalendarPeriodManager(state: state) }
+                Toggle(state.tr("말풍선에 목표 표시"), isOn: $state.showGoal).toggleStyle(.checkbox).font(.caption)
+                Spacer()
                 Menu {
                     ForEach([75, 90, 100, 110, 125, 140], id: \.self) { value in
                         Button("\(value)%") { plannerZoom = Double(value) / 100 }
@@ -175,15 +200,24 @@ struct DailyPlanView: View {
                 Spacer()
                 Text(date, format: .dateTime.weekday(.wide)).font(.system(size: 20 * zoom, weight: .medium)).foregroundStyle(.secondary)
             }.buttonStyle(.borderless)
+            CalendarPeriodBadges(date: date)
             Divider().overlay(plannerSage.opacity(0.25))
         }
     }
-    var intention: some View {
-        PlannerGoalCard(title: state.tr("오늘의 목표"), subtitle: state.tr("오늘 가장 중요한 한 가지"),
-                        placeholder: state.tr("오늘의 목표를 적어주세요"), goal: $state.goal,
-                        appearance: state.appearance) {
-            Toggle(state.tr("말풍선에 목표 표시"), isOn: $state.showGoal).font(.system(size: 12 * zoom)).toggleStyle(.checkbox)
-        }
+    private func topGoal(_ title: String, goal: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.system(size: 16 * zoom, weight: .semibold)).foregroundStyle(.secondary)
+            TextField(title, text: goal, axis: .vertical).font(.system(size: 21 * zoom, weight: .semibold)).lineLimit(2...4).textFieldStyle(.plain).accessibilityLabel(title)
+        }.padding(14).frame(maxWidth: .infinity, alignment: .leading).plannerSurface(state.appearance)
+    }
+    private func pageButton(_ ko: String, _ en: String, symbol: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(state.language == .ko ? ko : en, systemImage: symbol)
+                .font(.system(size: 18 * zoom, weight: .semibold)).frame(maxWidth: .infinity).frame(minHeight: 52)
+                .foregroundStyle(selected ? state.appearance.plannerAccent.ink : plannerInk)
+                .background(selected ? plannerSage : state.appearance.plannerCard.color, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(selected ? plannerSage : plannerInk.opacity(0.12)))
+        }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
     var taskList: some View {
         VStack(alignment: .leading, spacing: 12) {

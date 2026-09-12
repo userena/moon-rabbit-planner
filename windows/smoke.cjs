@@ -25,6 +25,11 @@ module.exports = async ({planner, pet, file, tick, screen}) => {
   await until(planner, "document.querySelector('h1')?.textContent === 'Windows 실제 테스트' && document.querySelector('[data-field=title]')?.value === '실제 일정 저장'");
   await planner.webContents.executeJavaScript("document.querySelector('[data-delete]').click()");
   await until(planner, "window.moonRabbit.loadShared().then(s => Object.values(s.days).every(d=>d.tasks.length===0))");
+  await planner.webContents.executeJavaScript(`document.querySelector('[data-view="studio"]').click(); const project=document.querySelector('[data-studio-field="project"]'); project.value='Agent smoke'; project.dispatchEvent(new Event('input',{bubbles:true})); document.querySelector('[data-preview]').click();`);
+  assert.equal(await planner.webContents.executeJavaScript("document.querySelector('#studio-prompt').value.includes('Agent smoke')"), true);
+  await until(planner, "window.moonRabbit.loadShared().then(s=>s.studio?.project==='Agent smoke')");
+  await planner.webContents.executeJavaScript("document.querySelector('#close-dialog').click(); document.querySelector('[data-view=week]').click()");
+  assert.equal(await planner.webContents.executeJavaScript("document.querySelectorAll('[data-date]').length"), 7);
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).title, 'Windows 실제 테스트');
   assert.equal(pet.isAlwaysOnTop(), true);
   assert.equal(await planner.webContents.executeJavaScript('window.moonRabbit.setPetSize(280)'), 280);

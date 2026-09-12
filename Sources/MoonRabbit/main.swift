@@ -509,11 +509,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let data = try? JSONEncoder().encode(state.plan) { UserDefaults.standard.set(data, forKey: "dailyPlan") }
         if announce { state.say(state.tr("일정을 저장했어요 ✓"), duration: 8) }
     }
+    private var quickToolPanel: NSPanel?
     @objc func showPetMenu() {
         let menu = NSMenu()
-        let options: [(String, String)] = [("🥕 간식", "snack"), ("♡ 웃기", "smile"), ("♫ 춤", "dance"), ("↟ 스트레칭", "stretch"), ("❀ 꽃 주기", "flower"), ("☕ 커피", "coffee"), ("함께 작업하기", "work"), ("플래너", "planner"), ("오늘 날씨", "weather"), ("날씨 지역 설정", "weatherSettings"), ("설정", "settings")]
+        let options: [(String, String)] = [("플래너", "planner"), ("알람", "alarms"), ("메뉴 룰렛", "roulette"), ("🥕 간식", "snack"), ("♡ 웃기", "smile"), ("♫ 춤", "dance"), ("↟ 스트레칭", "stretch"), ("❀ 꽃 주기", "flower"), ("☕ 커피", "coffee"), ("함께 작업하기", "work"), ("오늘 날씨", "weather"), ("날씨 지역 설정", "weatherSettings"), ("설정", "settings")]
         for (label, key) in options {
-            if key == "planner" || key == "settings" { menu.addItem(.separator()) }
+            if key == "settings" { menu.addItem(.separator()) }
             let item = NSMenuItem(title: state.tr(label), action: #selector(menuAction(_:)), keyEquivalent: "")
             item.target = self; item.representedObject = key; menu.addItem(item)
         }
@@ -526,6 +527,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let key = sender.representedObject as? String else { return }
         if let activity = PetActivity(rawValue: key) { perform(activity) }
         else if key == "planner" { showPlanner() }
+        else if key == "alarms" || key == "roulette" {
+            quickToolPanel?.close()
+            let content: NSView = key == "alarms" ? NSHostingView(rootView: AlarmSettingsView(state: state)) : NSHostingView(rootView: MealRouletteView(state: state))
+            quickToolPanel = companionPanel(title: state.tr(key == "alarms" ? "알람" : "메뉴 룰렛"), content: content, autosave: "RabbitQuick-" + key)
+            quickToolPanel?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
         else if key == "weather" { reportSavedWeather() }
         else if key == "weatherSettings" { showWeather() }
         else { showControls() }

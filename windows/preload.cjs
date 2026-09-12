@@ -8,7 +8,11 @@ function subscribe(channel, callback) {
 }
 contextBridge.exposeInMainWorld('moonRabbit', {
   platform: 'windows',
-  openPlanner: () => ipcRenderer.invoke('planner:open'),
+  saveAPIKey: (provider,key) => ipcRenderer.invoke('api:save',provider,key),
+  deleteAPIKey: provider => ipcRenderer.invoke('api:delete',provider),
+  sendPersonalAPI: (provider,model,prompt,consent) => ipcRenderer.invoke('api:send',provider,model,prompt,consent),
+  openPlanner: section => ipcRenderer.invoke('planner:open', section),
+  onPlannerSection: callback => subscribe('planner:section', callback),
   setPetSize: value => ipcRenderer.invoke('pet:size', value),
   setWander: value => ipcRenderer.invoke('pet:wander', value),
   performAction: value => ipcRenderer.invoke('pet:action', value),

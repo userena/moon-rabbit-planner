@@ -1,7 +1,7 @@
 {
   "name": "moon-rabbit-planner-windows",
   "productName": "Moon Rabbit Planner",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A local-first planner and hanbok rabbit desktop companion",
   "author": "userena",
   "license": "MIT",
@@ -9,7 +9,7 @@
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "start": "electron .",
-    "test": "node --test shell.test.cjs",
+    "test": "node --test shell.test.cjs personal-api.test.cjs ../web/core.test.cjs ../web/studio.test.cjs",
     "smoke": "electron . --smoke-test",
     "dist": "electron-builder --win portable --x64 --publish never"
   },

@@ -16,7 +16,7 @@ jobs:
       - name: Verify source and build updated Mac app
         run: |
           swift test --disable-sandbox
-          node --test web/core.test.cjs
+          node --test web/core.test.cjs web/studio.test.cjs
           bash scripts/build-app.sh
       - name: Retrieve tested Windows build and package iPad source
         env:
@@ -37,19 +37,24 @@ jobs:
           test "$IPAD_RESULT" = success
           gh run download "$WINDOWS_RUN" -n MoonRabbit-Windows-x64 -D release
           cp dist/MoonRabbit-macOS.zip release/
-          git archive --format=zip --output=release/MoonRabbit-iPad-source.zip HEAD ipad web scripts/prepare-web-assets.py Sources/MoonRabbit/Resources ARTWORK-LICENSE.md LICENSE THIRD-PARTY-NOTICES.md PRIVACY.md
+          git archive --format=zip --output=release/MoonRabbit-iPad-source.zip HEAD ipad web scripts/prepare-web-assets.py Sources/MoonRabbit/PersonalAPI.swift Sources/MoonRabbit/Resources ARTWORK-LICENSE.md LICENSE THIRD-PARTY-NOTICES.md PRIVACY.md
       - name: Publish preview release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > /tmp/release-notes.md <<'NOTES'
-          달토끼 플래너 개인용 업데이트입니다. 기본 핑크, 로고 선택, 날짜 확대, 창/배율 조절, 우선순위 알림, 메뉴 룰렛, 일간/주간/월간 목표 막대를 포함합니다.
+          달토끼 플래너 개인용 업데이트입니다.
+          - 이름 옆 오늘·이달 목표, 커진 일간·주간·월간·에이전트 전환 버튼, 주간 일정 보기와 주차별 목표 편집
+          - 시간표 위 디데이, 커진 저장 버튼과 여백, 토끼 빠른 메뉴 맨 위 플래너
+          - 에이전트 작업실: 역할 분담, 순서 설계도, 일정 가져오기, 단계/하부 카테고리 편집, 사무실 배치도/구조도, 지시문 미리보기·복사, ChatGPT/Codex/Gemini/Claude 열기
+          - 기본 플래너는 무료입니다. 선택 기능인 개인 API 연결은 본인 키를 저장하고 전송을 확인한 경우에만 제공자 계정으로 과금될 수 있습니다. 실제 유료 API 호출은 검증에 사용하지 않았습니다.
+          - 일관리/생활관리 분리, 식사·수면·운동·휴식·취미·모임 기록, 행사·시험 기간 색상, 빠른 메뉴 알람·룰렛
 
           - Mac: MoonRabbit-macOS.zip — 최신 Mac 앱. Apple 공증을 받지 않은 ad-hoc 서명입니다.
-          - Windows / Galaxy Book: MoonRabbit-Windows-2.0.0-x64.exe — Windows 실행/저장/이동 테스트 통과. 실제 Galaxy Book 하드웨어 테스트는 하지 않았습니다.
+          - Windows / Galaxy Book: MoonRabbit-Windows-2.1.0-x64.exe — Windows 실행/저장/이동 테스트 통과. 실제 Galaxy Book 하드웨어 테스트는 하지 않았습니다.
           - iPad: MoonRabbit-iPad-source.zip — Xcode 빌드용 소스. 시뮬레이터 세로/가로 테스트 통과. 바로 설치하는 IPA가 아니며 기기 설치에는 서명 설정이 필요합니다.
 
           이 릴리스의 동일 커밋으로 Mac 테스트, Windows 실행 테스트와 iPad 시뮬레이터 테스트가 통과한 뒤 패키징합니다.
           말풍선 알림은 앱 실행 중에 동작하며, iPad는 앱이 화면에 열려 있어야 합니다. 실시간 팀 공동 사용 기능은 포함하지 않습니다.
           NOTES
-          gh release create v2.0.1-preview release/* --target "$GITHUB_SHA" --title "달토끼 플래너 · Mac / Windows / iPad preview" --notes-file /tmp/release-notes.md --prerelease
+          gh release create v2.1.0-preview release/* --target "$GITHUB_SHA" --title "달토끼 플래너 · Mac / Windows / iPad preview" --notes-file /tmp/release-notes.md --prerelease

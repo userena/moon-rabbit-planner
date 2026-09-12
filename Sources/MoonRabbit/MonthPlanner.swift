@@ -64,6 +64,7 @@ struct MonthPlannerView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 5) {
                                 Text("\(calendar.component(.day, from: day))").font(.system(size: 16, weight: calendar.isDateInToday(day) ? .bold : .regular))
+                                CalendarPeriodBadges(date: day)
                                 ForEach(tasks.prefix(2)) { item in
                                     HStack(spacing: 3) {
                                         Circle().fill((item.color ?? state.appearance.plannerAccent).color).frame(width: 5, height: 5)
@@ -72,7 +73,8 @@ struct MonthPlannerView: View {
                                 }
                                 Spacer(minLength: 0)
                                 if !tasks.isEmpty { Text("\(tasks.filter(\.done).count)/\(tasks.count)").font(.system(size: 12)).foregroundStyle(.secondary) }
-                            }.padding(8).frame(maxWidth: .infinity, minHeight: 108, maxHeight: 108, alignment: .topLeading)
+                            }.padding(8).frame(maxWidth: .infinity, minHeight: 108, alignment: .topLeading)
+                                .modifier(CalendarPeriodTint(date: day))
                                 .background(state.appearance.plannerCard.color, in: RoundedRectangle(cornerRadius: 10))
                                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(calendar.isDateInToday(day) ? state.appearance.plannerAccent.color : .clear, lineWidth: 1.5))
                                 .foregroundStyle(state.appearance.plannerCard.ink).opacity(available ? 1 : 0.3)

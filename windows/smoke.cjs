@@ -18,6 +18,7 @@ module.exports = async ({planner, pet, file, tick, screen}) => {
     await until(win, "document.querySelectorAll('.rabbit-pet img').length > 0 && [...document.querySelectorAll('.rabbit-pet img')].every(img => img.complete && img.naturalWidth > 0)");
   }
   await until(planner, "document.querySelector('h1')?.textContent.includes('달토끼')");
+  assert.equal(await planner.webContents.executeJavaScript("getComputedStyle(document.querySelector('.management-tabs')).display === 'grid' && document.styleSheets[0].cssRules.length > 30"), true, 'planner stylesheet must render');
   await planner.webContents.executeJavaScript(`document.querySelector('#rename').click(); document.querySelector('#new-title').value = 'Windows 실제 테스트'; document.querySelector('#rename-form').requestSubmit(); document.querySelector('#add-task').click(); const input=document.querySelector('[data-field="title"]'); input.value='실제 일정 저장'; input.dispatchEvent(new Event('change',{bubbles:true}));`);
   await until(planner, "window.moonRabbit.loadShared().then(s => s.title === 'Windows 실제 테스트' && Object.values(s.days).some(d=>d.tasks.some(t=>t.title==='실제 일정 저장')))");
   planner.reload();

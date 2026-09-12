@@ -540,10 +540,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc func showPlanner() {
         if plannerPanel == nil {
-            plannerPanel = companionPanel(title: state.tr("하루 플래너"), content: NSHostingView(rootView: DailyPlanView(state: state, save: { [weak self] in self?.savePlanner() }, settings: { [weak self] in self?.showControls() }, toggle: { [weak self] in self?.toggle() }, focus: { [weak self] minutes in self?.startFocus(minutes: minutes) })), autosave: "MoonRabbitPlannerV2")
+            let host = NSHostingView(rootView: DailyPlanView(state: state, save: { [weak self] in self?.savePlanner() }, settings: { [weak self] in self?.showControls() }, toggle: { [weak self] in self?.toggle() }, focus: { [weak self] minutes in self?.startFocus(minutes: minutes) }))
+            host.sizingOptions = []
+            plannerPanel = companionPanel(title: state.tr("하루 플래너"), content: host, autosave: "MoonRabbitPlannerV2")
             plannerPanel?.styleMask.insert(.resizable)
             plannerPanel?.contentMinSize = NSSize(width: 600, height: 440)
-            if let bounds = NSScreen.main?.visibleFrame {
+            plannerPanel?.contentMaxSize = NSSize(width: 10000, height: 10000)
+            if plannerPanel?.setFrameUsingName("MoonRabbitPlannerV2") != true, let bounds = NSScreen.main?.visibleFrame {
                 plannerPanel?.setContentSize(NSSize(width: min(980, bounds.width - 40), height: min(780, bounds.height - 80)))
                 plannerPanel?.center()
             }

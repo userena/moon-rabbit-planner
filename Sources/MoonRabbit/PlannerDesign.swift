@@ -9,6 +9,7 @@ extension View {
 }
 
 struct PlannerGoalCard<Footer: View>: View {
+    @Environment(\.plannerContentZoom) private var zoom
     let title: String
     let subtitle: String
     let placeholder: String
@@ -19,11 +20,11 @@ struct PlannerGoalCard<Footer: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 2).fill(appearance.plannerAccent.color).frame(width: 4, height: 24)
-                Text(title).font(.system(size: 20, weight: .semibold))
+                Text(title).font(.system(size: 20 * zoom, weight: .semibold))
             }
-            Text(subtitle).font(.system(size: 12)).foregroundStyle(.secondary)
+            Text(subtitle).font(.system(size: 12 * zoom)).foregroundStyle(.secondary)
             TextField(placeholder, text: $goal, axis: .vertical)
-                .font(.system(size: 25, weight: .medium)).lineLimit(2...4)
+                .font(.system(size: 25 * zoom, weight: .medium)).lineLimit(2...4)
                 .textFieldStyle(.plain).accessibilityLabel(title)
                 .padding(.vertical, 6)
             footer().frame(minHeight: 18, alignment: .leading)
@@ -127,5 +128,13 @@ struct PlannerLogoMenu: View {
                     }
                 }.padding(18)
             }
+    }
+}
+
+private struct PlannerContentZoomKey: EnvironmentKey { static let defaultValue: CGFloat = 1 }
+extension EnvironmentValues {
+    var plannerContentZoom: CGFloat {
+        get { self[PlannerContentZoomKey.self] }
+        set { self[PlannerContentZoomKey.self] = newValue }
     }
 }

@@ -36,42 +36,47 @@ struct DailyPlanView: View {
         return String(format: "%02d:%02d", seconds / 3600, seconds / 60 % 60)
     }
     @AppStorage("plannerZoom") private var plannerZoom = 1.0
-    @State private var measuredHeight: CGFloat = 1000
     var zoom: CGFloat { min(1.4, max(0.75, plannerZoom)) }
     var body: some View {
         GeometryReader { geometry in
+        let availableWidth = max(560, geometry.size.width)
+        let narrow = availableWidth < 760
+        let columns = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16)) : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
         ScrollView([.horizontal, .vertical]) {
             VStack(alignment: .leading, spacing: 20) {
                 header
                 modeSelector
                 periodControls
                 if monthView {
+                    GoalProgressView(state: state, date: date)
                     MonthPlannerView(state: state, role: role, date: $date, start: periodStart, end: periodEnd, openDay: { monthView = false }, save: save)
                 } else {
-                HStack(alignment: .top, spacing: 16) {
-                    intention
-                    MonthlyGoalCard(state: state, date: date, role: role)
-                }
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 16) { taskList; RoleToolsView(state: state, dayKey: dayKey, focus: focus, role: role); notes }
-                        .frame(maxWidth: .infinity)
-                    VStack(spacing: 14) { milestone; rhythm }.frame(width: 270)
-                }
+                    columns {
+                        VStack(alignment: .leading, spacing: 16) {
+                            GoalProgressView(state: state, date: date)
+                            intention
+                            MonthlyGoalCard(state: state, date: date, role: role)
+                            taskList
+                            RoleToolsView(state: state, dayKey: dayKey, focus: focus, role: role)
+                            notes
+                        }.frame(maxWidth: .infinity)
+                        VStack(spacing: 14) { rhythm; milestone }
+                            .frame(width: narrow ? availableWidth - 48 : min(270 * zoom, max(220, availableWidth * 0.28)))
+                    }
                 }
                 HStack {
-                    Text(state.tr("작은 계획들이 모여 나의 하루가 돼요.")).font(.system(size: 13)).foregroundStyle(.secondary)
+                    Text(state.tr("작은 계획들이 모여 나의 하루가 돼요.")).font(.system(size: 13 * zoom)).foregroundStyle(.secondary)
                     Spacer()
                     Button(state.tr(state.saved ? "저장됨 ✓" : (monthView ? "월간 저장" : "하루 저장")), action: save)
                         .buttonStyle(.borderedProminent).controlSize(.large)
                 }
             }.padding(24)
-                .frame(width: max(880, geometry.size.width / zoom))
-                .background(GeometryReader { inner in Color.clear.preference(key: PlannerHeightKey.self, value: inner.size.height) })
-                .scaleEffect(zoom, anchor: .topLeading)
-                .frame(width: max(880, geometry.size.width / zoom) * zoom, height: measuredHeight * zoom, alignment: .topLeading)
-        }.onPreferenceChange(PlannerHeightKey.self) { measuredHeight = $0 }
+                .frame(width: availableWidth)
+                .fixedSize(horizontal: false, vertical: true)
+        }
         }.frame(minWidth: 600, idealWidth: 980, minHeight: 440, idealHeight: 780)
-            .font(.system(size: 14))
+            .environment(\.plannerContentZoom, zoom)
+            .font(.system(size: 14 * zoom))
             .background(state.appearance.plannerBackground.color)
             .foregroundStyle(state.appearance.plannerBackground.ink).tint(plannerSage)
             .onAppear { if UserDefaults.standard.object(forKey: "plannerStart") == nil { UserDefaults.standard.set(startTimestamp, forKey: "plannerStart") } }
@@ -102,18 +107,18 @@ struct DailyPlanView: View {
     var modeSelector: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(state.tr("플래너 모드")).font(.system(size: 19, weight: .semibold))
+                Text(state.tr("플래너 모드")).font(.system(size: 19 * zoom, weight: .semibold))
                 Spacer()
-                Text(state.tr("모드별 일정과 노트는 따로 보관돼요.")).font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(state.tr("모드별 일정과 노트는 따로 보관돼요.")).font(.system(size: 12 * zoom)).foregroundStyle(.secondary)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 8)], spacing: 8) {
                 ForEach(WorkRole.allCases, id: \.rawValue) { option in
                     Button { state.roleValue = option.rawValue } label: {
                         HStack(spacing: 8) {
                             Image(systemName: option.plannerSymbol).frame(width: 18)
-                            Text(state.tr(option.title)).font(.system(size: 14, weight: .medium))
+                            Text(state.tr(option.title)).font(.system(size: 14 * zoom, weight: .medium))
                             Spacer(minLength: 0)
-                            if option == role { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)) }
+                            if option == role { Image(systemName: "checkmark").font(.system(size: 11 * zoom, weight: .bold)) }
                         }.padding(.horizontal, 12).frame(height: 42)
                             .foregroundStyle(option == role ? state.appearance.plannerAccent.ink : plannerInk)
                             .background(option == role ? plannerSage : plannerInk.opacity(0.04), in: RoundedRectangle(cornerRadius: 9))
@@ -122,7 +127,7 @@ struct DailyPlanView: View {
                 }
             }
             if role == .startupTeam {
-                Text(state.tr("이 Mac에서 팀 업무를 정리하는 모드입니다. 실시간 공동 편집은 지원하지 않습니다.")).font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(state.tr("이 Mac에서 팀 업무를 정리하는 모드입니다. 실시간 공동 편집은 지원하지 않습니다.")).font(.system(size: 12 * zoom)).foregroundStyle(.secondary)
             }
         }.padding(20).plannerSurface(state.appearance)
     }
@@ -132,7 +137,7 @@ struct DailyPlanView: View {
             HStack(alignment: .center, spacing: 12) {
                 PlannerLogoMenu(state: state)
                 Text(state.appearance.resolvedPlannerTitle(language: state.language))
-                    .font(.system(size: 30, weight: .semibold)).lineLimit(2)
+                    .font(.system(size: 30 * zoom, weight: .semibold)).lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                 Button { showRename = true } label: { Image(systemName: "pencil") }
                     .accessibilityLabel(state.tr("플래너 이름 변경"))
@@ -156,11 +161,11 @@ struct DailyPlanView: View {
                     .popover(isPresented: $showAlarms) { AlarmSettingsView(state: state) }
                 Button(action: settings) { Image(systemName: "slider.horizontal.3") }
                     .accessibilityLabel(state.tr("설정"))
-            }.font(.system(size: 17)).buttonStyle(.borderless)
+            }.font(.system(size: 17 * zoom)).buttonStyle(.borderless)
             HStack(spacing: 14) {
                 Button { date = Calendar.current.date(byAdding: .day, value: -1, to: date)! } label: { Image(systemName: "chevron.left") }.accessibilityLabel(state.tr("이전 날"))
                 Button { showDateChooser.toggle() } label: {
-                    Text(date, format: .dateTime.year().month().day()).font(.system(size: 23, weight: .semibold))
+                    Text(date, format: .dateTime.year().month().day()).font(.system(size: 23 * zoom, weight: .semibold))
                 }.buttonStyle(.plain).accessibilityLabel(state.language == .ko ? "날짜 변경" : "Change date")
                     .popover(isPresented: $showDateChooser) {
                         DatePicker(state.language == .ko ? "날짜" : "Date", selection: $date, displayedComponents: .date).padding(20)
@@ -168,7 +173,7 @@ struct DailyPlanView: View {
                 Button { date = Calendar.current.date(byAdding: .day, value: 1, to: date)! } label: { Image(systemName: "chevron.right") }.accessibilityLabel(state.tr("다음 날"))
                 Button(state.tr("오늘")) { date = Date() }
                 Spacer()
-                Text(date, format: .dateTime.weekday(.wide)).font(.system(size: 20, weight: .medium)).foregroundStyle(.secondary)
+                Text(date, format: .dateTime.weekday(.wide)).font(.system(size: 20 * zoom, weight: .medium)).foregroundStyle(.secondary)
             }.buttonStyle(.borderless)
             Divider().overlay(plannerSage.opacity(0.25))
         }
@@ -177,19 +182,19 @@ struct DailyPlanView: View {
         PlannerGoalCard(title: state.tr("오늘의 목표"), subtitle: state.tr("오늘 가장 중요한 한 가지"),
                         placeholder: state.tr("오늘의 목표를 적어주세요"), goal: $state.goal,
                         appearance: state.appearance) {
-            Toggle(state.tr("말풍선에 목표 표시"), isOn: $state.showGoal).font(.system(size: 12)).toggleStyle(.checkbox)
+            Toggle(state.tr("말풍선에 목표 표시"), isOn: $state.showGoal).font(.system(size: 12 * zoom)).toggleStyle(.checkbox)
         }
     }
     var taskList: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(state.tr(role.taskHeading)).font(.system(size: 15, weight: .semibold))
+                Text(state.tr(role.taskHeading)).font(.system(size: 15 * zoom, weight: .semibold))
                 Spacer()
-                Text("\(completed) / \(activeRows.count)").font(.system(size: 13, design: .monospaced)).foregroundStyle(.secondary)
+                Text("\(completed) / \(activeRows.count)").font(.system(size: 13 * zoom, design: .monospaced)).foregroundStyle(.secondary)
                 Button { addTask(PlanItem()) } label: { Image(systemName: "plus.circle.fill") }.buttonStyle(.plain).accessibilityLabel(state.tr("+ 일정 추가"))
             }
             HStack {
-                Text(state.tr("시간 선택 간격")).font(.system(size: 12))
+                Text(state.tr("시간 선택 간격")).font(.system(size: 12 * zoom))
                 Picker(state.tr("시간 선택 간격"), selection: $savedTimeStep) {
                     Text(state.tr("10분 단위")).tag(10)
                     Text(state.tr("30분 단위")).tag(30)
@@ -204,13 +209,13 @@ struct DailyPlanView: View {
                 Text(state.tr("할 일")).frame(maxWidth: .infinity, alignment: .leading)
                 Text(state.tr("분")).frame(width: 82)
                 Text("✓").frame(width: 28)
-            }.font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            }.font(.system(size: 12 * zoom, weight: .medium)).foregroundStyle(.secondary)
             ScrollView {
                 VStack(spacing: 8) {
                     if items.wrappedValue.isEmpty {
                         VStack(spacing: 10) {
-                            Image(systemName: "leaf").font(.system(size: 24)).foregroundStyle(plannerSage)
-                            Text(state.tr("아직 비어 있는 하루, 첫 계획을 적어봐요.")).font(.system(size: 14)).foregroundStyle(.secondary)
+                            Image(systemName: "leaf").font(.system(size: 24 * zoom)).foregroundStyle(plannerSage)
+                            Text(state.tr("아직 비어 있는 하루, 첫 계획을 적어봐요.")).font(.system(size: 14 * zoom)).foregroundStyle(.secondary)
                             Button(state.tr("+ 일정 추가")) { addTask(PlanItem()) }
                         }.frame(maxWidth: .infinity).padding(.vertical, 25)
                     }
@@ -229,7 +234,7 @@ struct DailyPlanView: View {
                                              label: { "\($0) \(state.tr("분"))" }) { item.minutes = $0 }
                                 .frame(width: 82)
                             Toggle("", isOn: $item.done).labelsHidden().frame(width: 28).accessibilityLabel(state.tr("완료"))
-                        }.textFieldStyle(.roundedBorder).font(.system(size: 13)).padding(.vertical, 5)
+                        }.textFieldStyle(.roundedBorder).font(.system(size: 13 * zoom)).padding(.vertical, 5)
                         HStack {
                             Picker(state.tr("우선순위"), selection: $item.priority) {
                                 Text(state.tr("보통")).tag("normal")
@@ -243,7 +248,7 @@ struct DailyPlanView: View {
                             Button(role: .destructive) { deleteTask(item.id) } label: {
                                 Label(state.tr("일정 삭제"), systemImage: "trash")
                             }.buttonStyle(.bordered).controlSize(.regular)
-                        }.font(.system(size: 12))
+                        }.font(.system(size: 12 * zoom))
                         Divider().opacity(0.5)
                     }
                 }
@@ -252,31 +257,32 @@ struct DailyPlanView: View {
     }
     var notes: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(state.tr("기억하고 싶은 메모")).font(.system(size: 14, weight: .semibold))
+            Text(state.tr("기억하고 싶은 메모")).font(.system(size: 14 * zoom, weight: .semibold))
             TextEditor(text: Binding(get: { state.plan.notes[dayKey, default: ""] }, set: { state.plan.notes[dayKey] = $0 }))
-                .font(.system(size: 14)).scrollContentBackground(.hidden).frame(height: 65)
+                .environment(\.plannerContentZoom, zoom)
+            .font(.system(size: 14 * zoom)).scrollContentBackground(.hidden).frame(height: 65)
                 .accessibilityLabel(state.tr("하루 메모"))
         }.padding(20).plannerSurface(state.appearance)
     }
     var milestone: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
-                Text(state.appearance.milestoneHeading.isEmpty ? state.tr("기다리는 그날") : state.appearance.milestoneHeading).font(.system(size: 13, weight: .semibold))
+                Text(state.appearance.milestoneHeading.isEmpty ? state.tr("기다리는 그날") : state.appearance.milestoneHeading).font(.system(size: 13 * zoom, weight: .semibold))
                 Spacer()
                 Toggle("", isOn: $state.showDDay).labelsHidden().toggleStyle(.switch).controlSize(.mini).accessibilityLabel(state.tr("말풍선에 디데이 표시"))
             }
             HStack(alignment: .firstTextBaseline) {
-                Text(state.appearance.dayLabel(target: state.ddayDate)).font(.system(size: 30, weight: .medium, design: .rounded)).monospacedDigit().lineLimit(2).minimumScaleFactor(0.6)
+                Text(state.appearance.dayLabel(target: state.ddayDate)).font(.system(size: 30 * zoom, weight: .medium, design: .rounded)).monospacedDigit().lineLimit(2).minimumScaleFactor(0.6)
                 Spacer()
-                Image(systemName: "moon.stars").font(.system(size: 22))
+                Image(systemName: "moon.stars").font(.system(size: 22 * zoom))
             }
-            TextField(state.tr("기념일이나 마감 이름"), text: $state.ddayTitle).textFieldStyle(.plain).font(.system(size: 14))
+            TextField(state.tr("기념일이나 마감 이름"), text: $state.ddayTitle).textFieldStyle(.plain).font(.system(size: 14 * zoom))
             DatePicker("", selection: $state.ddayDate, displayedComponents: .date).labelsHidden()
             Divider()
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(state.tr("이날 집중한 시간")).font(.system(size: 12))
-                    Text(todayWork).font(.system(size: 21, design: .monospaced))
+                    Text(state.tr("이날 집중한 시간")).font(.system(size: 12 * zoom))
+                    Text(todayWork).font(.system(size: 21 * zoom, design: .monospaced))
                 }
                 Spacer()
                 Button(state.tr(state.running ? "일시정지" : "시작"), action: toggle).buttonStyle(.bordered)
@@ -294,21 +300,21 @@ struct DailyPlanView: View {
     }
     var rhythm: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(state.tr("하루 일정")).font(.system(size: 13, weight: .semibold))
-            Text(state.tr(timeStep == 30 ? "30분 칸 · 눌러서 일정 추가" : "10분 칸 · 눌러서 일정 추가")).font(.system(size: 12)).foregroundStyle(.secondary)
+            Text(state.tr("하루 일정")).font(.system(size: 13 * zoom, weight: .semibold))
+            Text(state.tr(timeStep == 30 ? "30분 칸 · 눌러서 일정 추가" : "10분 칸 · 눌러서 일정 추가")).font(.system(size: 12 * zoom)).foregroundStyle(.secondary)
             HStack(spacing: 4) {
                 Text(state.tr("시간")).frame(width: 26)
                 ForEach(0..<(60 / timeStep), id: \.self) { part in
                     Text("\(String(format: "%02d", part * timeStep))\(state.tr("분"))")
                         .frame(maxWidth: .infinity).minimumScaleFactor(0.7).lineLimit(1)
                 }
-            }.font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+            }.font(.system(size: 11 * zoom, design: .monospaced)).foregroundStyle(.secondary)
             VStack(spacing: 5) {
                 ForEach(0..<24, id: \.self) { hour in
                     HStack(spacing: 4) {
                         Button(String(format: "%02d", hour)) {
                             addTask(PlanItem(time: String(format: "%02d:00", hour)))
-                        }.buttonStyle(.plain).font(.system(size: 12, design: .monospaced)).frame(width: 26)
+                        }.buttonStyle(.plain).font(.system(size: 12 * zoom, design: .monospaced)).frame(width: 26)
                         ForEach(0..<(60 / timeStep), id: \.self) { part in
                             let minute = hour * 60 + part * timeStep
                             Button {
@@ -316,7 +322,7 @@ struct DailyPlanView: View {
                             } label: {
                                 RoundedRectangle(cornerRadius: 2)
                                     .fill(scheduleColor(minute: minute))
-                                    .frame(height: 15)
+                                    .frame(height: 15 * zoom)
                             }.buttonStyle(.plain).help(scheduleHint(minute: minute))
                                 .accessibilityLabel("\(PlanningTimeOptions.clock(minute)) · \(state.tr("+ 일정 추가"))")
                                 .contextMenu {
@@ -380,7 +386,3 @@ struct WeatherView: View {
     }
 }
 
-private struct PlannerHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 1000
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}

@@ -18,9 +18,9 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <key>CFBundleName</key><string>MoonRabbit</string>
 <key>CFBundleDisplayName</key><string>달토끼</string>
 <key>CFBundleIdentifier</key><string>local.moonrabbit.desktop</string>
-<key>CFBundleVersion</key><string>19</string>
+<key>CFBundleVersion</key><string>20</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
-<key>CFBundleShortVersionString</key><string>1.8.1</string>
+<key>CFBundleShortVersionString</key><string>1.8.2</string>
 <key>CFBundleExecutable</key><string>MoonRabbit</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
@@ -32,6 +32,10 @@ xattr -cr "$APP"
 codesign --force --deep --sign - "$APP"
 codesign --verify --deep --strict "$APP"
 mkdir -p dist
-ditto -c -k --keepParent "$APP" dist/MoonRabbit-macOS.zip
-ditto "$APP" dist/MoonRabbit.app
+ditto -c -k --norsrc --noextattr --keepParent "$APP" dist/MoonRabbit-macOS.zip
+# Replace only the generated app, rather than merging stale resources/metadata.
+rm -rf dist/MoonRabbit.app
+ditto --norsrc --noextattr "$APP" dist/MoonRabbit.app
+xattr -cr dist/MoonRabbit.app
+codesign --verify --deep --strict dist/MoonRabbit.app
 printf 'Built: %s/dist/MoonRabbit.app\n' "$PWD"

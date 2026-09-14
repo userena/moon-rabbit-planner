@@ -74,6 +74,15 @@ struct RolePage: Codable {
     var notes: [String: String] = [:]
     var checked: [String: Bool] = [:]
     var colors = [PetColor(0.4, 0.55, 0.46), PetColor(0.8, 0.6, 0.65), PetColor(0.97, 0.94, 0.88)]
+    init() {}
+    enum CodingKeys: String, CodingKey { case notes, checked, colors }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        notes = try c.decodeIfPresent([String: String].self, forKey: .notes) ?? [:]
+        checked = try c.decodeIfPresent([String: Bool].self, forKey: .checked) ?? [:]
+        let saved = try c.decodeIfPresent([PetColor].self, forKey: .colors) ?? []
+        for index in colors.indices where saved.indices.contains(index) { colors[index] = saved[index] }
+    }
 }
 struct StudyTotal: Equatable {
     let subject: String

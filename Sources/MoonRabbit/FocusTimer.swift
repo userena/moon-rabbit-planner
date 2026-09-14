@@ -4,10 +4,10 @@ enum TimerMode: String, CaseIterable { case stopwatch, countdown }
 
 struct FocusTimer {
     private(set) var remaining: TimeInterval
-    init(seconds: TimeInterval) { remaining = max(0, seconds) }
+    init(seconds: TimeInterval) { remaining = WorkClock.safeSeconds(seconds) }
     /// Returns true once, at the transition to zero.
     mutating func advance(by seconds: TimeInterval) -> Bool {
-        guard remaining > 0 else { return false }
+        guard remaining > 0, seconds.isFinite else { return false }
         remaining = max(0, remaining - max(0, seconds))
         return remaining == 0
     }

@@ -85,12 +85,28 @@ struct WeatherService {
     @MainActor static func search(query: String, language: AppLanguage) async throws -> [WeatherPlace] {
         let key = language.rawValue + ":" + query
         if let cached = searchCache[key] { return cached }
-        let response = try await load(NeighborhoodResponse.self, from: neighborhoodURL(query: query, language: language))
+        let result = try await searchWithFallback(primary: {
+            try await load(NeighborhoodResponse.self, from: neighborhoodURL(query: query, language: language)).places
+        }, fallback: {
+            try await searchCities(query: query, language: language)
+        })
         try Task.checkCancellation()
-        let places = response.places
-        let result = places.isEmpty ? try await searchCities(query: query, language: language) : places
+        if searchCache.count >= 100 { searchCache.removeAll() }
         searchCache[key] = result
         return result
+    }
+    static func searchWithFallback(primary: () async throws -> [WeatherPlace], fallback: () async throws -> [WeatherPlace]) async throws -> [WeatherPlace] {
+        do {
+            let places = try await primary()
+            try Task.checkCancellation()
+            if !places.isEmpty { return places }
+        } catch {
+            if error is CancellationError || (error as? URLError)?.code == .cancelled { throw error }
+            try Task.checkCancellation()
+        }
+        let places = try await fallback()
+        try Task.checkCancellation()
+        return places
     }
     static func current(place: WeatherPlace) async throws -> CurrentWeather {
         struct Response: Decodable { let current: CurrentWeather }

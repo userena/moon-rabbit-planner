@@ -1,0 +1,28 @@
+name: Publish Mac stability update
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/mac-release.yml']
+permissions:
+  contents: write
+concurrency:
+  group: moonrabbit-mac-release
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify native Mac regressions
+        run: swift test --disable-sandbox
+      - name: Build and verify signed Mac app
+        run: |
+          bash scripts/build-app.sh
+          codesign --verify --deep --strict dist/MoonRabbit.app
+      - name: Publish tested Mac download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create macos-v1.8.2 dist/MoonRabbit-macOS.zip --target "$GITHUB_SHA" --title "달토끼 플래너 · Mac 1.8.2 안정성 업데이트" --notes-file MAC-VERIFICATION.md --prerelease

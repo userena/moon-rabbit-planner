@@ -13,7 +13,11 @@ struct RoutineRecord: Codable {
     var rest: String? = nil
     var hobby: String? = nil
     var meetup: String? = nil
-    var sleepMinutes: Int { (wake - bedtime + 1440) % 1440 }
+    var sleepMinutes: Int {
+        let start = ((bedtime % 1440) + 1440) % 1440
+        let end = ((wake % 1440) + 1440) % 1440
+        return (end - start + 1440) % 1440
+    }
 }
 struct RoutineView: View {
     @ObservedObject var state: PetState

@@ -13,7 +13,7 @@ Requires macOS 13+. The provided app ZIP is for Apple Silicon. Unzip and open `M
 open dist/MoonRabbit.app
 ```
 
-No external build dependencies, proprietary server, or activity tracking. Weather uses the online Open-Meteo service. This is a locally ad-hoc signed app, not an Apple-notarized release. Quit an older running version before opening an update.
+No external build dependencies, proprietary server, or activity tracking. Weather uses Photon/OpenStreetMap search and Open-Meteo forecasts. This is a locally ad-hoc signed app, not an Apple-notarized release. Quit an older running version before opening an update.
 
 ## Use
 
@@ -35,7 +35,7 @@ Use **Save** in settings to persist preferences with a visible confirmation. Liv
 
 Open **Daily planner** from settings or **Today’s plan** from the left-click menu. The planner also opens at launch and from the menu-bar status icon. Select a date, add time, category, task and duration, mark tasks done, and save. A 24-hour timeline, daily notes and daily focus totals are included. Daily totals start with this version. Set a milestone name and date and enable its switch to show D-day above the rabbit’s message. Save your day stores the goal, milestone, tasks and notes. The rabbit summarizes up to three unfinished tasks for today. Plans are local; there is no external calendar sync.
 
-Choose **Weather**, search for a city, and select the matching location. The window shows current/feels-like temperature, condition, wind, and local data time. Reopening or refreshing fetches updated data for the last chosen city. Network failures are shown with a retry option. Only city/location data is sent; goals and plans remain local. GPS permission is not used. Sources: [Open-Meteo](https://open-meteo.com/en/docs), [Geocoding / GeoNames](https://open-meteo.com/en/docs/geocoding-api).
+Choose **Weather**, search for a city, and select the matching location. The window shows current/feels-like temperature, condition, wind, and local data time. Reopening or refreshing fetches updated data for the last chosen city. Network failures are shown with a retry option. Only city/location data is sent; goals and plans remain local. GPS permission is not used. Sources: [Photon / OpenStreetMap](https://photon.komoot.io/), [Open-Meteo](https://open-meteo.com/en/docs), [Geocoding / GeoNames](https://open-meteo.com/en/docs/geocoding-api).
 
 ## Development
 

@@ -42,7 +42,7 @@ struct ScrollTimePicker: View {
                             }
                         }.frame(width: 145, height: 230)
                             .onAppear {
-                                if let selected, let nearest = options.min(by: { abs($0 - selected) < abs($1 - selected) }) {
+                                if let selected, let nearest = PlanningTimeOptions.nearest(to: selected, in: options) {
                                     reader.scrollTo(nearest, anchor: .center)
                                 }
                             }
@@ -53,6 +53,12 @@ struct ScrollTimePicker: View {
 }
 
 enum PlanningTimeOptions {
+    static func nearest(to selected: Int, in options: [Int]) -> Int? {
+        guard let lower = options.min(), let upper = options.max() else { return nil }
+        if selected <= lower { return lower }
+        if selected >= upper { return upper }
+        return options.min { abs(Double($0) - Double(selected)) < abs(Double($1) - Double(selected)) }
+    }
     static func step(_ value: Int) -> Int { value == 30 ? 30 : 10 }
     static func starts(step: Int) -> [Int] { Array(stride(from: 0, to: 1440, by: self.step(step))) }
     static func durations(step: Int) -> [Int] { Array(stride(from: self.step(step), through: 1440, by: self.step(step))) }

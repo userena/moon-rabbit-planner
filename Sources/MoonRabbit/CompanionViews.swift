@@ -416,7 +416,7 @@ struct WeatherView: View {
             Link("Weather: Open-Meteo", destination: URL(string: "https://open-meteo.com/")!).font(.caption2)
             Link("Search: Photon · © OpenStreetMap contributors", destination: URL(string: "https://www.openstreetmap.org/copyright")!).font(.caption2)
         }.padding(16).frame(width: 350, height: 410).tint(.brown)
-            .background(Color(red: 0.97, green: 0.94, blue: 0.90))
+            .settingsSurface()
     }
 }
 

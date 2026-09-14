@@ -252,7 +252,7 @@ struct ControlView: View {
             HStack {
                 Text(state.tr("☾ 달토끼")).font(.system(size: 16, weight: .semibold))
                 Spacer()
-                Text(state.tr(state.running ? "집중 중" : "쉬는 중")).font(.system(size: 10)).foregroundStyle(.secondary)
+                Text(state.tr(state.running ? "집중 중" : "쉬는 중")).font(.system(size: 10)).foregroundStyle(SettingsTheme.secondary)
             }
             TextField(state.tr("오늘의 목표를 적어주세요"), text: $state.goal)
                 .textFieldStyle(.roundedBorder).font(.system(size: 12))
@@ -270,10 +270,10 @@ struct ControlView: View {
                 Text(state.timerDisplay).font(.system(size: 29, weight: .light, design: .monospaced)).monospacedDigit()
                 Spacer()
                 Button(state.tr(state.running ? "일시정지" : "시작"), action: toggle)
-                    .buttonStyle(.borderedProminent).tint(Color(red: 0.52, green: 0.35, blue: 0.40))
+                    .buttonStyle(SettingsActionButtonStyle())
             }
             HStack(spacing: 6) {
-                Text(state.tr("설정")).foregroundStyle(.secondary)
+                Text(state.tr("설정")).foregroundStyle(SettingsTheme.secondary)
                 TextField(state.tr("분"), value: $state.minutes, format: .number)
                     .textFieldStyle(.roundedBorder).frame(width: 46).accessibilityLabel(state.tr("타이머 시간 분"))
                 Text(state.tr("분"))
@@ -282,7 +282,7 @@ struct ControlView: View {
                 Button(state.tr("50분")) { state.minutes = 50; state.timerMode = .countdown; state.countdown = FocusTimer(seconds: 3000) }
             }.font(.system(size: 11)).disabled(state.running || state.timerMode == .stopwatch)
             HStack {
-                Text("\(state.tr("누적")) \(state.time)").foregroundStyle(.secondary)
+                Text("\(state.tr("누적")) \(state.time)").foregroundStyle(SettingsTheme.secondary)
                 Spacer()
                 Button(state.tr("초기화"), action: reset).buttonStyle(.plain)
             }.font(.system(size: 10))
@@ -307,7 +307,7 @@ struct ControlView: View {
                 Text("\(Int(state.scale * 100))%").font(.system(size: 10)).monospacedDigit().frame(width: 34)
             }
             Text(state.tr("왼쪽 클릭: 빠른 메뉴 · 오른쪽 클릭: 설정"))
-                .font(.system(size: 9)).foregroundStyle(.secondary)
+                .font(.system(size: 11)).foregroundStyle(SettingsTheme.secondary)
             HStack {
                 Text(state.tr("언어"))
                 Spacer()
@@ -319,11 +319,11 @@ struct ControlView: View {
             HStack {
                 Button(state.tr(state.visible ? "펫 숨기기" : "펫 보이기"), action: hide)
                 Spacer()
-                Button(state.tr(state.saved ? "저장됨 ✓" : "저장"), action: save).buttonStyle(.borderedProminent)
+                Button(state.tr(state.saved ? "저장됨 ✓" : "저장"), action: save).buttonStyle(SettingsActionButtonStyle())
                 Button(state.tr("종료")) { NSApp.terminate(nil) }
-            }.buttonStyle(.plain).font(.system(size: 10)).foregroundStyle(.secondary)
+            }.buttonStyle(.plain).font(.system(size: 12))
         }.padding(16).frame(width: 300)
-            .background(Color(red: 0.97, green: 0.94, blue: 0.90))
+            .settingsSurface()
     }
 }
 

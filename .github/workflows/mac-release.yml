@@ -25,4 +25,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create macos-v1.8.2 dist/MoonRabbit-macOS.zip --target "$GITHUB_SHA" --title "달토끼 플래너 · Mac 1.8.2 안정성 업데이트" --notes-file MAC-VERIFICATION.md --prerelease
+          gh release create macos-v1.8.3 dist/MoonRabbit-macOS.zip --target "$GITHUB_SHA" --title "달토끼 플래너 · Mac 1.8.3 설정창 가독성 수정" --notes-file MAC-VERIFICATION.md --prerelease

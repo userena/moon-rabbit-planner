@@ -85,5 +85,6 @@ struct AppearanceView: View {
                 Button(state.tr(state.saved ? "저장됨 ✓" : "저장"), action: save).buttonStyle(.borderedProminent)
             }
         }.textFieldStyle(.roundedBorder).padding(18).frame(width: 310)
+            .settingsSurface()
     }
 }
